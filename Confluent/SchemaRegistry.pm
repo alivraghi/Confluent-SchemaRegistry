@@ -34,15 +34,16 @@ sub new {
 	# effettivamente riferimento ad un Confluent Schema Registry 
 	$self = bless($self, $class);
 	my $tlc = $self->get_top_level_config();
-	die "Invalid Schema Registry at $self->{_BASE_URL}: $!"
-		unless $tlc =~ m/^BACKWARD|NONE$/;
-	
-	return $self;
+	if ($tlc !~ m/^BACKWARD|NONE$/) {
+		return undef;
+	} else {
+		return $self;
+	}
 }
 
 sub _client { $_[0]->{_CLIENT} }
 
-# # Register a new version of a schema under the subject "Kafka-key"
+# # Register a new version of a schema under the subject "${SUBJECT}-${TYPE}"
 # $ curl -X POST -H "Content-Type: application/vnd.schemaregistry.v1+json" \
 #     --data '{"schema": "{\"type\": \"string\"}"}' \
 #     http://localhost:8081/subjects/Kafka-key/versions
@@ -53,12 +54,29 @@ sub _client { $_[0]->{_CLIENT} }
 #     --data '{"schema": "{\"type\": \"string\"}"}' \
 #      http://localhost:8081/subjects/Kafka-value/versions
 #   {"id":1}
+#
+# SUBJECT...: the name of the Kafka topic
+# TYPE......: the type of schema ("key" or "value")
+# SCHEMA....: the schema (HASH) to check for
+#
+# Return the generated id for the new schema or the REST error
 sub add_schema {
-	# subject	STRING
-	# type		STRING ("key" || "value")
-	# schema	HASH
-	# 
-	# returns the version id (NUMBER)
+	my $self = shift;
+	my %params = @_;
+	return undef
+		unless	defined($params{SUBJECT}) 
+				&& defined($params{TYPE}) 
+				&& $params{SUBJECT} =~ m/^.+$/
+				&& $params{TYPE} =~ m/^key|value$/;
+	return undef
+		unless	defined($params{SCHEMA})
+				&& ref($params{SCHEMA}) eq 'HASH';
+	my $schema = encode_json({
+		schema => encode_json($params{SCHEMA})
+	});
+	my $res = decode_json($self->_client()->POST('/subjects/' . $params{SUBJECT} . '-' . $params{TYPE} . '/versions', $schema)->responseContent());
+	return $res->{id} if exists $res->{id};
+	return $res;
 }
 
 
@@ -184,10 +202,10 @@ sub check_schema {
 	return undef
 		unless	defined($params{SCHEMA})
 				&& ref($params{SCHEMA}) eq 'HASH';
-	my $schema = {
+	my $schema = encode_json({
 		schema => encode_json($params{SCHEMA})
-	};
-	return decode_json($self->_client()->POST('/subjects/' . $params{SUBJECT} . '-' . $params{TYPE}, encode_json($schema))->responseContent());
+	});
+	return decode_json($self->_client()->POST('/subjects/' . $params{SUBJECT} . '-' . $params{TYPE}, $schema)->responseContent());
 }
 
 
@@ -235,11 +253,13 @@ sub test_schema {
 sub get_top_level_config {
 	my $self = shift;
 	my $res = $self->_client()->GET('/config')->responseContent();
-	if ($res) {
+	return '' unless $res;
+	local $@;
+	eval {
 		$res = decode_json($res);
-		return $res->{compatibilityLevel} || '';
-	}
-	return '';
+	};
+	return '' if $@;
+	return $res->{compatibilityLevel} || '';
 }
 
 
