@@ -167,7 +167,7 @@ sub get_schema {
 	$params{VERSION} = 'latest' unless defined($params{VERSION});
 	my $res = decode_json($self->_client()->GET('/subjects/' . $params{SUBJECT} . '-' . $params{TYPE} . '/versions/' . $params{VERSION})->responseContent());
 	if (exists $res->{schema}) {
-		$res->{schema} = decode_json($res->{schema});
+		return decode_json($res->{schema});
 	}
 	return $res;
 }

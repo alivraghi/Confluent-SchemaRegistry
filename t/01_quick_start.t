@@ -92,7 +92,6 @@ ok(!defined $sr->add_schema(SUBJECT => $subject), qq/Bad call to add_schema/);
 ok(!defined $sr->add_schema(SUBJECT => $subject, TYPE => ''), qq/Bad empty TYPE in call to add_schema/);
 ok(!defined $sr->add_schema(SUBJECT => $subject, TYPE => 'foo'), qq/Bad TYPE in call to add_schema/);
 ok(!defined $sr->add_schema(SUBJECT => $subject, TYPE => $type), qq/Bad call to add_schema/);
-ok(!defined $sr->add_schema(SUBJECT => $subject, TYPE => $type), qq/Bad call to add_schema/);
 
 my $error = $sr->add_schema(SUBJECT => $subject, TYPE => $type, SCHEMA => $invalid_schema);
 isa_ok($error, 'HASH', qq/Invalid schema/);
@@ -109,7 +108,22 @@ isa_ok($new_version, 'ARRAY', qq/Schema versions/);
 ok(scalar(@$new_version)==1, qq/Only one version for current subject/);
 
 my $loaded_schema = $sr->get_schema_by_id(SCHEMA_ID => $new_id);
-is_deeply($loaded_schema, $main_schema, qq/Main vs loaded schema comparison/);
+is_deeply($loaded_schema, $main_schema, qq/Comparison between main & loaded by id schema/);
+$loaded_schema = $sr->get_schema(SUBJECT => $subject, TYPE => $type, VERSION => $new_version->[$#$new_version]);
+is_deeply($loaded_schema, $main_schema, qq/Comparison between main & loaded by version number schema/);
+$loaded_schema = $sr->get_schema(SUBJECT => $subject, TYPE => $type);
+is_deeply($loaded_schema, $main_schema, qq/Comparison between main & loaded by latest schema/);
+
+my $schema_info = $sr->check_schema(SUBJECT => $subject, TYPE => $type);
+ok(!defined($schema_info), 'Missing parameter SCHEMA calling check_schema() method');
+
+$schema_info = $sr->check_schema(SUBJECT => $subject, TYPE => $type, SCHEMA => $main_schema);
+isa_ok($schema_info, 'HASH', 'Valid check_schema() call');
+ok($schema_info->{subject} eq $subject.'-'.$type, 'Positive schema check');
+
+$schema_info = $sr->check_schema(SUBJECT => $subject, TYPE => $type, SCHEMA => $compliant_schema);
+ok(!exists $schema_info->{subject}, 'Negative schema check');
+
 
 
 
@@ -117,9 +131,6 @@ my $deleted = $sr->delete_subject(SUBJECT => $subject, TYPE => $type);
 isa_ok($deleted, 'ARRAY', qq/Subject deletion/);
 
 
-#
-#print 'get_schema: ' . Dumper $sr->get_schema(SUBJECT => 'test-elasticsearch-sink', TYPE => 'value', VERSION => 1);
-#print 'get_schema (latest): ' . Dumper $sr->get_schema(SUBJECT => 'test-elasticsearch-sink', TYPE => 'value');
 #print 'check_schema: ' . Dumper $sr->check_schema(SUBJECT => 'test-elasticsearch-sink', TYPE => 'value', SCHEMA => $schema1);
 #print 'check_schema: ' . Dumper $sr->check_schema(SUBJECT => 'test-elasticsearch-sink', TYPE => 'value', SCHEMA => $schema2);
 #print 'test_schema: ' . ($sr->test_schema(SUBJECT => 'test-elasticsearch-sink', TYPE => 'value', SCHEMA => $schema1) ? 'is compatible' : 'is NOT compatible'), "\n";
