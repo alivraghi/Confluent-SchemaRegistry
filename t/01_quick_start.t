@@ -57,9 +57,8 @@ my $compliant_schema = {
 				  },
 				  {
 					name => 'gender',
-					type => ['enum','null'],
-					symbols => ['F', 'M'],
-					default => undef
+					type => 'string',
+					default => 'XXX'
 				  }
 				]
 };
@@ -133,6 +132,8 @@ ok($is_compliant, 'Positive schema test');
 $is_compliant = $sr->test_schema(SUBJECT => $subject, TYPE => $type, SCHEMA => $non_compliant_schema);
 ok(!$is_compliant, 'Negative schema test');
 
+my $newest_id = $sr->add_schema(SUBJECT => $subject, TYPE => $type, SCHEMA => $compliant_schema);
+like($newest_id, qr/^\d+$/, qq/Add new schema/);
 
 my $deleted = $sr->delete_subject(SUBJECT => $subject, TYPE => $type);
 isa_ok($deleted, 'ARRAY', qq/Subject deletion/);
