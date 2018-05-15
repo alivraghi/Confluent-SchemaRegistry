@@ -63,7 +63,7 @@ my $compliant_schema = {
 				  }
 				]
 };
-# Non backward compatible AVRO schema
+# Non backward compatible AVRO schema (due to non-nullable new field)
 my $non_compliant_schema = {
 	name => 'test_contacts',
 	type => 'record',
@@ -78,8 +78,7 @@ my $non_compliant_schema = {
 				  },
 				  {
 					name => 'gender',
-					type => ['enum','null'],
-					symbols => ['F', 'M']
+					type => 'string'
 				  }
 				]
 };
@@ -125,14 +124,16 @@ $schema_info = $sr->check_schema(SUBJECT => $subject, TYPE => $type, SCHEMA => $
 ok(!exists $schema_info->{subject}, 'Negative schema check');
 
 
+my $is_compliant = $sr->test_schema(SUBJECT => $subject, TYPE => $type);
+ok(!defined($is_compliant), 'Missing parameter SCHEMA calling test_schema() method');
+
+$is_compliant = $sr->test_schema(SUBJECT => $subject, TYPE => $type, SCHEMA => $compliant_schema);
+ok($is_compliant, 'Positive schema test');
+
+$is_compliant = $sr->test_schema(SUBJECT => $subject, TYPE => $type, SCHEMA => $non_compliant_schema);
+ok(!$is_compliant, 'Negative schema test');
 
 
 my $deleted = $sr->delete_subject(SUBJECT => $subject, TYPE => $type);
 isa_ok($deleted, 'ARRAY', qq/Subject deletion/);
-
-
-#print 'check_schema: ' . Dumper $sr->check_schema(SUBJECT => 'test-elasticsearch-sink', TYPE => 'value', SCHEMA => $schema1);
-#print 'check_schema: ' . Dumper $sr->check_schema(SUBJECT => 'test-elasticsearch-sink', TYPE => 'value', SCHEMA => $schema2);
-#print 'test_schema: ' . ($sr->test_schema(SUBJECT => 'test-elasticsearch-sink', TYPE => 'value', SCHEMA => $schema1) ? 'is compatible' : 'is NOT compatible'), "\n";
-#print 'test_schema: ' . ($sr->test_schema(SUBJECT => 'test-elasticsearch-sink', TYPE => 'value', SCHEMA => $schema2) ? 'is compatible' : 'is NOT compatible'), "\n";
 
