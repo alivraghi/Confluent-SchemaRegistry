@@ -1,0 +1,9 @@
+#!/bin/env perl
+
+use strict;
+use warnings;
+
+use Test::More qw( no_plan );
+
+use_ok('Confluent::SchemaRegistry');
+
