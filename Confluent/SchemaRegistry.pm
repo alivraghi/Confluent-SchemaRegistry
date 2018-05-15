@@ -11,9 +11,9 @@ $Data::Dumper::Terse = 1;
 $Data::Dumper::Useqq = 1;
 
 
-# protocol	STRING
-# host		STRING
-# port		NUMBER
+# PROTOCOL	STRING
+# HOST		STRING
+# PORT		NUMBER
 sub new {
     my $this  = shift;
     my $class = ref($this) || $this;
@@ -43,17 +43,8 @@ sub new {
 
 sub _client { $_[0]->{_CLIENT} }
 
-# # Register a new version of a schema under the subject "${SUBJECT}-${TYPE}"
-# $ curl -X POST -H "Content-Type: application/vnd.schemaregistry.v1+json" \
-#     --data '{"schema": "{\"type\": \"string\"}"}' \
-#     http://localhost:8081/subjects/Kafka-key/versions
-#   {"id":1}
-# 
-# # # Register a new version of a schema under the subject "Kafka-value"
-# $ curl -X POST -H "Content-Type: application/vnd.schemaregistry.v1+json" \
-#     --data '{"schema": "{\"type\": \"string\"}"}' \
-#      http://localhost:8081/subjects/Kafka-value/versions
-#   {"id":1}
+
+# Register a new version of a schema under the subject "${SUBJECT}-${TYPE}"
 #
 # SUBJECT...: the name of the Kafka topic
 # TYPE......: the type of schema ("key" or "value")
@@ -91,6 +82,27 @@ sub get_subjects {
 }
 
 
+#
+# SUBJECT...: the name of the Kafka topic
+# TYPE......: the type of schema ("key" or "value")
+# SCHEMA....: the schema (HASH) to check for
+#
+# Return the generated id for the new schema or the REST error
+sub delete_subject {
+	my $self = shift;
+	my %params = @_;
+	return undef
+		unless	defined($params{SUBJECT}) 
+				&& defined($params{TYPE}) 
+				&& $params{SUBJECT} =~ m/^.+$/
+				&& $params{TYPE} =~ m/^key|value$/;
+	my $res = decode_json($self->_client()->DELETE('/subjects/' . $params{SUBJECT} . '-' . $params{TYPE})->responseContent());
+	#return $res->{id} if exists $res->{id};
+	return $res;
+
+}
+
+
 # List all schema versions registered under the subject "${SUBJECT}-${TYPE}"
 # $ curl -X GET http://localhost:8081/subjects/${SUBJECT}-${TYPE}/versions
 # 
@@ -124,7 +136,7 @@ sub get_schema_by_id {
 				&& $params{SCHEMA_ID} =~ m/^\d+$/;
 	my $res = decode_json($self->_client()->GET('/schemas/ids/' . $params{SCHEMA_ID})->responseContent());
 	if (exists $res->{schema}) {
-		$res->{schema} = decode_json($res->{schema});
+		return decode_json($res->{schema});
 	}
 	return $res;
 }
@@ -164,6 +176,11 @@ sub get_schema {
 # # Delete version 3 of the schema registered under subject "Kafka-value"
 # $ curl -X DELETE http://localhost:8081/subjects/Kafka-value/versions/3
 #   3
+# SUBJECT...: the name of the Kafka topic
+# TYPE......: the type of schema ("key" or "value")
+# SCHEMA....: the schema (HASH) to check for
+#
+# Returns the deleted id for the new schema or the REST error
 sub delete_schema {
 	# subject	STRING
 	# type		STRING ("key" || "value")
