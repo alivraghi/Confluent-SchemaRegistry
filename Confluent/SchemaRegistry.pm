@@ -29,6 +29,7 @@ sub new {
 	# Creazione client REST
 	$self->{_CLIENT} = REST::Client->new( host => $self->{_BASE_URL} )
 		or die "Unable to connect to $self->{_BASE_URL}: $!";
+	$self->{_CLIENT}->addHeader('Content-Type', 'application/vnd.schemaregistry.v1+json');
 	
 	# Recupero la configurazione globale del registry per testare se le coordinate fanno
 	# effettivamente riferimento ad un Confluent Schema Registry 
@@ -41,16 +42,18 @@ sub new {
 	}
 }
 
+
+# Private method that returns REST client
 sub _client { $_[0]->{_CLIENT} }
 
 
-# Register a new version of a schema under the subject "${SUBJECT}-${TYPE}"
+# Register a new schema version under a subject
 #
 # SUBJECT...: the name of the Kafka topic
 # TYPE......: the type of schema ("key" or "value")
 # SCHEMA....: the schema (HASH) to check for
 #
-# Return the generated id for the new schema or the REST error
+# Returns the generated id for the new schema or the REST error
 sub add_schema {
 	my $self = shift;
 	my %params = @_;
@@ -71,8 +74,7 @@ sub add_schema {
 }
 
 
-# List all subjects
-# $ curl -X GET http://localhost:8081/subjects
+# List all the registered subjects
 # 
 # Returns the list of subjects (ARRAY) or the REST error (HASH)
 sub get_subjects {
@@ -82,12 +84,13 @@ sub get_subjects {
 }
 
 
-#
+# Delete a subject
+# 
 # SUBJECT...: the name of the Kafka topic
 # TYPE......: the type of schema ("key" or "value")
 # SCHEMA....: the schema (HASH) to check for
 #
-# Return the generated id for the new schema or the REST error
+# Returns the list of versions for the deleted subject or the REST error
 sub delete_subject {
 	my $self = shift;
 	my %params = @_;
@@ -97,14 +100,12 @@ sub delete_subject {
 				&& $params{SUBJECT} =~ m/^.+$/
 				&& $params{TYPE} =~ m/^key|value$/;
 	my $res = decode_json($self->_client()->DELETE('/subjects/' . $params{SUBJECT} . '-' . $params{TYPE})->responseContent());
-	#return $res->{id} if exists $res->{id};
 	return $res;
 
 }
 
 
-# List all schema versions registered under the subject "${SUBJECT}-${TYPE}"
-# $ curl -X GET http://localhost:8081/subjects/${SUBJECT}-${TYPE}/versions
+# List the schema versions registered under a subject
 # 
 # SUBJECT...: the name of the Kafka topic
 # TYPE......: the type of schema ("key" or "value")
@@ -122,8 +123,7 @@ sub get_schema_versions {
 }
 
 
-# Fetch a schema by globally unique id $SCHEMA_ID
-# $ curl -X GET http://localhost:8081/schemas/ids/${SCHEMA_ID}
+# Fetch a schema by globally unique id
 # 
 # SCHEMA_ID...: the globally unique id of the schema
 # 
@@ -142,15 +142,11 @@ sub get_schema_by_id {
 }
 
 
-# Fetch version $VERSION of the schema registered under subject "${SUBJECT}-${TYPE}"
-# $ curl -X GET http://localhost:8081/subjects/${SUBJECT}-${TYPE}/versions/${VERSION}
-# 
-# Fetch the most recently registered schema under subject "Kafka-value"
-# $ curl -X GET http://localhost:8081/subjects/${SUBJECT}-${TYPE}/versions/latest
+# Fetch a specific version of the schema registered under a subject
 # 
 # SUBJECT...: the name of the Kafka topic
 # TYPE......: the type of schema ("key" or "value")
-# VERSION...: the schema version to retrieve; if omitted latest version is returned
+# VERSION...: the schema version to fetch; if omitted the latest version is fetched
 #
 # Returns schema (HASH) or the REST error
 sub get_schema {
@@ -173,24 +169,37 @@ sub get_schema {
 }
 
 
-# # Delete version 3 of the schema registered under subject "Kafka-value"
+# Delete a specific version of the schema registered under a subject
 # $ curl -X DELETE http://localhost:8081/subjects/Kafka-value/versions/3
 #   3
 # SUBJECT...: the name of the Kafka topic
 # TYPE......: the type of schema ("key" or "value")
 # SCHEMA....: the schema (HASH) to check for
 #
-# Returns the deleted id for the new schema or the REST error
+# Returns the deleted version number (NUMBER)
 sub delete_schema {
-	# subject	STRING
-	# type		STRING ("key" || "value")
-	# version	NUMBER
-	#
-	# returns the number of deleted version (NUMBER)
+	my $self = shift;
+	my %params = @_;
+	return undef
+		unless	defined($params{SUBJECT}) 
+				&& defined($params{TYPE}) 
+				&& $params{SUBJECT} =~ m/^.+$/
+				&& $params{TYPE} =~ m/^key|value$/;
+	return undef
+		if	defined($params{VERSION}) 
+			&& $params{VERSION} !~ m/^\d+$/;
+	$params{VERSION} = 'latest' unless defined($params{VERSION});
+	$self->_client()->DELETE('/subjects/' . $params{SUBJECT} . '-' . $params{TYPE} . '/versions/' . $params{VERSION});
+	my $res = $self->_client()->responseContent();
+	if ( $self->_client()->responseCode() >= 200 && $self->_client()->responseCode() < 300 ) {
+		return $res;
+	} else {
+		return decode_json($res);
+	}
 }
 
 
-# # Delete all versions of the schema registered under subject "Kafka-value"
+# Delete all versions of the schema registered under subject "Kafka-value"
 # $ curl -X DELETE http://localhost:8081/subjects/Kafka-value
 #   [1, 2, 3, 4, 5]
 sub delete_all_schemas {
@@ -226,11 +235,7 @@ sub check_schema {
 }
 
 
-# # Test compatibility of the schema $SCHEMA with the version $VERSION of the schema under subject "${SUBJECT}-${TYPE}"
-# $ curl -X POST -H "Content-Type: application/vnd.schemaregistry.v1+json" \
-#     --data '{"schema": "{\"type\": \"string\"}"}' \
-#     http://localhost:8081/compatibility/subjects/Kafka-value/versions/latest
-#   {"is_compatible":true}
+# Test compatibility of the schema $SCHEMA with the version $VERSION of the schema under subject "${SUBJECT}-${TYPE}"
 #
 # SUBJECT...: the name of the Kafka topic
 # TYPE......: the type of schema ("key" or "value")
@@ -264,9 +269,9 @@ sub test_schema {
 }
 
 
-# # Get top level config
-# $ curl -X GET http://localhost:8081/config
-#   {"compatibilityLevel":"BACKWARD"}
+# Get top level config
+# 
+# Return top-level compatibility level
 sub get_top_level_config {
 	my $self = shift;
 	my $res = $self->_client()->GET('/config')->responseContent();

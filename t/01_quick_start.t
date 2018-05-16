@@ -101,13 +101,13 @@ my $subjects = $sr->get_subjects();
 isa_ok($subjects, 'ARRAY', qq/Subjects/);
 print STDERR Dumper $subjects;
 
-my $new_version = $sr->get_schema_versions(SUBJECT => $subject, TYPE => $type);
-isa_ok($new_version, 'ARRAY', qq/Schema versions/);
-ok(scalar(@$new_version)==1, qq/Only one version for current subject/);
+my $versions = $sr->get_schema_versions(SUBJECT => $subject, TYPE => $type);
+isa_ok($versions, 'ARRAY', qq/Schema versions/);
+ok(scalar(@$versions)==1, qq/Only one version for current subject/);
 
 my $loaded_schema = $sr->get_schema_by_id(SCHEMA_ID => $new_id);
 is_deeply($loaded_schema, $main_schema, qq/Comparison between main & loaded by id schema/);
-$loaded_schema = $sr->get_schema(SUBJECT => $subject, TYPE => $type, VERSION => $new_version->[$#$new_version]);
+$loaded_schema = $sr->get_schema(SUBJECT => $subject, TYPE => $type, VERSION => $versions->[$#$versions]);
 is_deeply($loaded_schema, $main_schema, qq/Comparison between main & loaded by version number schema/);
 $loaded_schema = $sr->get_schema(SUBJECT => $subject, TYPE => $type);
 is_deeply($loaded_schema, $main_schema, qq/Comparison between main & loaded by latest schema/);
@@ -134,6 +134,16 @@ ok(!$is_compliant, 'Negative schema test');
 
 my $newest_id = $sr->add_schema(SUBJECT => $subject, TYPE => $type, SCHEMA => $compliant_schema);
 like($newest_id, qr/^\d+$/, qq/Add new schema/);
+
+my $new_versions = $sr->get_schema_versions(SUBJECT => $subject, TYPE => $type); 
+ok(scalar(@$new_versions)==scalar(@$versions)+1, qq/Expected +1 version/); 
+
+my $deleted_version = $sr->delete_schema(SUBJECT => $subject, TYPE => $type, VERSION => 9999); 
+isa_ok($deleted_version, 'HASH', qq/Previous schema deletion failure/);
+
+$deleted_version = $sr->delete_schema(SUBJECT => $subject, TYPE => $type, VERSION => $new_versions->[0]); 
+ok($deleted_version == $new_versions->[0], qq/Previous schema deletion/);
+
 
 my $deleted = $sr->delete_subject(SUBJECT => $subject, TYPE => $type);
 isa_ok($deleted, 'ARRAY', qq/Subject deletion/);
