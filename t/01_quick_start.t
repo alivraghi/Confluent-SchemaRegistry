@@ -19,15 +19,15 @@ my $main_schema = {
 	name => 'test_contacts',
 	type => 'record',
 	fields => [
-				  {
-					name => 'name',
-					type => 'string'
-				  },
-				  {
-					name => 'age',
-					type => 'int'
-				  }
-				]
+		{
+			name => 'name',
+			type => 'string'
+		},
+		{
+			name => 'age',
+			type => 'int'
+		}
+	]
 };
 # Invalid AVRO schema
 my $invalid_schema = {
@@ -37,39 +37,39 @@ my $compliant_schema = {
 	name => 'test_contacts',
 	type => 'record',
 	fields => [
-				  {
-					name => 'name',
-					type => 'string'
-				  },
-				  {
-					name => 'age',
-					type => 'int'
-				  },
-				  {
-					name => 'gender',
-					type => 'string',
-					default => 'XXX'
-				  }
-				]
+		{
+			name => 'name',
+			type => 'string'
+		},
+		{
+			name => 'age',
+			type => 'int'
+		},
+		{
+			name => 'gender',
+			type => 'string',
+			default => 'XXX'
+		}
+	]
 };
 # Non backward compatible AVRO schema (due to non-nullable new field)
 my $non_compliant_schema = {
 	name => 'test_contacts',
 	type => 'record',
 	fields => [
-				  {
-					name => 'name',
-					type => 'string'
-				  },
-				  {
-					name => 'age',
-					type => 'int'
-				  },
-				  {
-					name => 'gender',
-					type => 'string'
-				  }
-				]
+		{
+			name => 'name',
+			type => 'string'
+		},
+		{
+			name => 'age',
+			type => 'int'
+		},
+		{
+			name => 'gender',
+			type => 'string'
+		}
+	]
 };
 
 my $subject = 'confluent-schema-registry-' . time;
