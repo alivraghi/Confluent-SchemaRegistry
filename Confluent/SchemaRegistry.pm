@@ -40,7 +40,7 @@ $Data::Dumper::Useqq = 1;
 Construct a new C<Confluent::SchemaRegistry>. Takes an optional hash that provides 
 configuration flags for the L<REST::Client> internal object.
 
-The config flags, U<according to C<REST::Client::new> specs>, are:
+The config flags, according to C<REST::Client::new> specs, are:
  
 =over 4
  
