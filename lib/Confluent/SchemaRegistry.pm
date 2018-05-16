@@ -22,13 +22,15 @@ B<Apache Kafka> (L<https://kafka.apache.org/>) according to I<Apache Avro> schem
 =head1 METHODS
 
 =cut
+
+use 5.008;
 use strict;
 use warnings;
 
 use JSON;
 use REST::Client;
 
-our $VERSION = 0.1;
+our $VERSION = '0.01';
 
 =head2 Construction
 

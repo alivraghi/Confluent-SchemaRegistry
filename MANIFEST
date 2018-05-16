@@ -1,3 +1,8 @@
+Changes
+INSTALL
+lib/Confluent/SchemaRegistry.pm
 Makefile.PL
 MANIFEST
-Confluent/SchemaRegistry.pm
+README
+README.md
+t/01_quick_start.t
