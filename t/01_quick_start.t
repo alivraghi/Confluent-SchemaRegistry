@@ -7,22 +7,12 @@ $Data::Dumper::Purity = 1;
 $Data::Dumper::Terse = 1;
 $Data::Dumper::Useqq = 1;
 
-use Test::More qw( no_plan );
+#use Test::More qw( no_plan );
+use Test::More tests => 34;
 
 BEGIN { use_ok('Confluent::SchemaRegistry', qq/Using/); }
 
 my $class = 'Confluent::SchemaRegistry';
-
-my $sr;
-$sr = new_ok($class => [ 'HOST','localhost', 'PORT','8081' ], qq/Custom host and port/);
-$sr = undef;
-
-$sr = $class->new('HOST','localhost1', 'PORT','8081');
-ok(!defined($sr), qq/Invalid host/);
-$sr = $class->new('HOST','localhost', 'PORT','8082');
-ok(!defined($sr), qq/Invalid port/);
-
-$sr = new_ok($class => [], qq/Default host and port/);
 
 # Main AVRO schema
 my $main_schema = {
@@ -85,77 +75,97 @@ my $non_compliant_schema = {
 my $subject = 'confluent-schema-registry-' . time;
 my $type = 'value';
 
-ok(!defined $sr->add_schema(), qq/Bad call to add_schema/);
-ok(!defined $sr->add_schema(SUBJECT => $subject), qq/Bad call to add_schema/);
-ok(!defined $sr->add_schema(SUBJECT => $subject, TYPE => ''), qq/Bad empty TYPE in call to add_schema/);
-ok(!defined $sr->add_schema(SUBJECT => $subject, TYPE => 'foo'), qq/Bad TYPE in call to add_schema/);
-ok(!defined $sr->add_schema(SUBJECT => $subject, TYPE => $type), qq/Bad call to add_schema/);
-
-my $error = $sr->add_schema(SUBJECT => $subject, TYPE => $type, SCHEMA => $invalid_schema);
-isa_ok($error, 'HASH', qq/Invalid schema/);
-
-my $new_id = $sr->add_schema(SUBJECT => $subject, TYPE => $type, SCHEMA => $main_schema);
-like($new_id, qr/^\d+$/, qq/Good call to add_schema(SUBJECT=>'$subject', TYPE=>'$type', SCHEMA=>'...') returns $new_id/);
-
-my $subjects = $sr->get_subjects();
-isa_ok($subjects, 'ARRAY', qq/Subjects/);
-#print STDERR Dumper $subjects;
-
-my $versions = $sr->get_schema_versions(SUBJECT => $subject, TYPE => $type);
-isa_ok($versions, 'ARRAY', qq/Schema versions/);
-ok(scalar(@$versions)==1, qq/Only one version for current subject/);
-
-my $loaded_schema = $sr->get_schema_by_id(SCHEMA_ID => $new_id);
-is_deeply($loaded_schema, $main_schema, qq/Comparison between main & loaded by id schema/);
-$loaded_schema = $sr->get_schema(SUBJECT => $subject, TYPE => $type, VERSION => $versions->[$#$versions]);
-is_deeply($loaded_schema, $main_schema, qq/Comparison between main & loaded by version number schema/);
-$loaded_schema = $sr->get_schema(SUBJECT => $subject, TYPE => $type);
-is_deeply($loaded_schema, $main_schema, qq/Comparison between main & loaded by latest schema/);
-
-my $schema_info = $sr->check_schema(SUBJECT => $subject, TYPE => $type);
-ok(!defined($schema_info), 'Missing parameter SCHEMA calling check_schema() method');
-
-$schema_info = $sr->check_schema(SUBJECT => $subject, TYPE => $type, SCHEMA => $main_schema);
-isa_ok($schema_info, 'HASH', 'Valid check_schema() call');
-ok($schema_info->{subject} eq $subject.'-'.$type, 'Positive schema check');
-
-$schema_info = $sr->check_schema(SUBJECT => $subject, TYPE => $type, SCHEMA => $compliant_schema);
-ok(!exists $schema_info->{subject}, 'Negative schema check');
 
 
-my $is_compliant = $sr->test_schema(SUBJECT => $subject, TYPE => $type);
-ok(!defined($is_compliant), 'Missing parameter SCHEMA calling test_schema() method');
+my $sr;
+$sr = $class->new('HOST','localhost1', 'PORT','8081');
+ok(!defined($sr), qq/Invalid host/);
+$sr = $class->new('HOST','localhost', 'PORT','8082');
+ok(!defined($sr), qq/Invalid port/);
 
-$is_compliant = $sr->test_schema(SUBJECT => $subject, TYPE => $type, SCHEMA => $compliant_schema);
-ok($is_compliant, 'Positive schema test');
+SKIP: {
 
-$is_compliant = $sr->test_schema(SUBJECT => $subject, TYPE => $type, SCHEMA => $non_compliant_schema);
-ok(!$is_compliant, 'Negative schema test');
+	$sr = new_ok($class => [ 'HOST','localhost', 'PORT','8081' ], qq/Valid host and port/);
+	
+	skip qq/Confluent Schema Registry service is not up or isn't running on localhost:8081/, 30 unless defined $sr;
+	
+	$sr = undef;
 
-my $newest_id = $sr->add_schema(SUBJECT => $subject, TYPE => $type, SCHEMA => $compliant_schema);
-like($newest_id, qr/^\d+$/, qq/Add new schema/);
+	$sr = new_ok($class => [], qq/Default host and port/);
 
-my $new_versions = $sr->get_schema_versions(SUBJECT => $subject, TYPE => $type); 
-ok(scalar(@$new_versions)==scalar(@$versions)+1, qq/Expected +1 version/); 
+	ok(!defined $sr->add_schema(), qq/Bad call to add_schema/);
+	ok(!defined $sr->add_schema(SUBJECT => $subject), qq/Bad call to add_schema/);
+	ok(!defined $sr->add_schema(SUBJECT => $subject, TYPE => ''), qq/Bad empty TYPE in call to add_schema/);
+	ok(!defined $sr->add_schema(SUBJECT => $subject, TYPE => 'foo'), qq/Bad TYPE in call to add_schema/);
+	ok(!defined $sr->add_schema(SUBJECT => $subject, TYPE => $type), qq/Bad call to add_schema/);
 
-my $deleted_version = $sr->delete_schema(SUBJECT => $subject, TYPE => $type, VERSION => 9999); 
-isa_ok($deleted_version, 'HASH', qq/Previous schema deletion failure due to unknown version/);
+	my $error = $sr->add_schema(SUBJECT => $subject, TYPE => $type, SCHEMA => $invalid_schema);
+	isa_ok($error, 'HASH', qq/Invalid schema/);
 
-$deleted_version = $sr->delete_schema(SUBJECT => $subject, TYPE => $type); 
-ok(!defined $deleted_version, qq/Previous schema deletion failure due to unspecified version/);
+	my $new_id = $sr->add_schema(SUBJECT => $subject, TYPE => $type, SCHEMA => $main_schema);
+	like($new_id, qr/^\d+$/, qq/Good call to add_schema(SUBJECT=>'$subject', TYPE=>'$type', SCHEMA=>'...') returns $new_id/);
 
-$deleted_version = $sr->delete_schema(SUBJECT => $subject, TYPE => $type, VERSION => $new_versions->[0]); 
-ok($deleted_version == $new_versions->[0], qq/Previous schema deletion/);
+	my $subjects = $sr->get_subjects();
+	isa_ok($subjects, 'ARRAY', qq/Subjects/);
+	#print STDERR Dumper $subjects;
 
-$deleted_version = $sr->delete_all_schemas(SUBJECT => $subject, TYPE => $type);
-isa_ok($deleted_version, 'ARRAY', qq/Delete all schemas/);
+	my $versions = $sr->get_schema_versions(SUBJECT => $subject, TYPE => $type);
+	isa_ok($versions, 'ARRAY', qq/Schema versions/);
+	ok(scalar(@$versions)==1, qq/Only one version for current subject/);
 
-$newest_id = $sr->add_schema(SUBJECT => $subject, TYPE => $type, SCHEMA => $compliant_schema);
-like($newest_id, qr/^\d+$/, qq/Add new schema/);
+	my $loaded_schema = $sr->get_schema_by_id(SCHEMA_ID => $new_id);
+	is_deeply($loaded_schema, $main_schema, qq/Comparison between main & loaded by id schema/);
+	$loaded_schema = $sr->get_schema(SUBJECT => $subject, TYPE => $type, VERSION => $versions->[$#$versions]);
+	is_deeply($loaded_schema, $main_schema, qq/Comparison between main & loaded by version number schema/);
+	$loaded_schema = $sr->get_schema(SUBJECT => $subject, TYPE => $type);
+	is_deeply($loaded_schema, $main_schema, qq/Comparison between main & loaded by latest schema/);
 
-my $deleted = $sr->delete_subject(SUBJECT => 'UNKNOWN-SUBJECT', TYPE => $type);
-isa_ok($deleted, 'HASH', qq/Unknown subject deletion/);
+	my $schema_info = $sr->check_schema(SUBJECT => $subject, TYPE => $type);
+	ok(!defined($schema_info), 'Missing parameter SCHEMA calling check_schema() method');
 
-$deleted = $sr->delete_subject(SUBJECT => $subject, TYPE => $type);
-isa_ok($deleted, 'ARRAY', qq/Subject deletion/);
+	$schema_info = $sr->check_schema(SUBJECT => $subject, TYPE => $type, SCHEMA => $main_schema);
+	isa_ok($schema_info, 'HASH', 'Valid check_schema() call');
+	ok($schema_info->{subject} eq $subject.'-'.$type, 'Positive schema check');
+
+	$schema_info = $sr->check_schema(SUBJECT => $subject, TYPE => $type, SCHEMA => $compliant_schema);
+	ok(!exists $schema_info->{subject}, 'Negative schema check');
+
+
+	my $is_compliant = $sr->test_schema(SUBJECT => $subject, TYPE => $type);
+	ok(!defined($is_compliant), 'Missing parameter SCHEMA calling test_schema() method');
+
+	$is_compliant = $sr->test_schema(SUBJECT => $subject, TYPE => $type, SCHEMA => $compliant_schema);
+	ok($is_compliant, 'Positive schema test');
+
+	$is_compliant = $sr->test_schema(SUBJECT => $subject, TYPE => $type, SCHEMA => $non_compliant_schema);
+	ok(!$is_compliant, 'Negative schema test');
+
+	my $newest_id = $sr->add_schema(SUBJECT => $subject, TYPE => $type, SCHEMA => $compliant_schema);
+	like($newest_id, qr/^\d+$/, qq/Add new schema/);
+
+	my $new_versions = $sr->get_schema_versions(SUBJECT => $subject, TYPE => $type); 
+	ok(scalar(@$new_versions)==scalar(@$versions)+1, qq/Expected +1 version/); 
+
+	my $deleted_version = $sr->delete_schema(SUBJECT => $subject, TYPE => $type, VERSION => 9999); 
+	isa_ok($deleted_version, 'HASH', qq/Previous schema deletion failure due to unknown version/);
+
+	$deleted_version = $sr->delete_schema(SUBJECT => $subject, TYPE => $type); 
+	ok(!defined $deleted_version, qq/Previous schema deletion failure due to unspecified version/);
+
+	$deleted_version = $sr->delete_schema(SUBJECT => $subject, TYPE => $type, VERSION => $new_versions->[0]); 
+	ok($deleted_version == $new_versions->[0], qq/Previous schema deletion/);
+
+	$deleted_version = $sr->delete_all_schemas(SUBJECT => $subject, TYPE => $type);
+	isa_ok($deleted_version, 'ARRAY', qq/Delete all schemas/);
+
+	$newest_id = $sr->add_schema(SUBJECT => $subject, TYPE => $type, SCHEMA => $compliant_schema);
+	like($newest_id, qr/^\d+$/, qq/Add new schema/);
+
+	my $deleted = $sr->delete_subject(SUBJECT => 'UNKNOWN-SUBJECT', TYPE => $type);
+	isa_ok($deleted, 'HASH', qq/Unknown subject deletion/);
+
+	$deleted = $sr->delete_subject(SUBJECT => $subject, TYPE => $type);
+	isa_ok($deleted, 'ARRAY', qq/Subject deletion/);
+
+}
 
