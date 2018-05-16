@@ -127,13 +127,31 @@ sub new {
 sub _client { $_[0]->{_CLIENT} }
 
 
-# Register a new schema version under a subject
-#
-# SUBJECT...: the name of the Kafka topic
-# TYPE......: the type of schema ("key" or "value")
-# SCHEMA....: the schema (HASH) to check for
-#
-# Returns the generated id for the new schema or the REST error
+=head3 add_schema( %params )
+
+Registers a new schema version under a subject.
+
+Returns the generated id for the new schema or a RESTful error.
+
+Params keys are:
+
+=over 4
+
+=item SUBJECT ($scalar)
+
+the name of the Kafka topic
+
+=item TYPE ($scalar)
+
+the type of schema ("key" or "value")
+
+=item SCHEMA ($hashref)
+
+the schema to add
+
+=back 
+
+=cut
 sub add_schema {
 	my $self = shift;
 	my %params = @_;

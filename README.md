@@ -80,6 +80,26 @@ The config flags, according to `REST::Client::new` specs, are:
 
     REST::Client will provide a default for you if you do not set this.
 
+### add\_schema( %params )
+
+Registers a new schema version under a subject.
+
+Returns the generated id for the new schema or a RESTful error.
+
+Params keys are:
+
+- SUBJECT ($scalar)
+
+    the name of the Kafka topic
+
+- TYPE ($scalar)
+
+    the type of schema ("key" or "value")
+
+- SCHEMA ($hashref)
+
+    the schema to add
+
 # TODO
 
 ...
