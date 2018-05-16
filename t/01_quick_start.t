@@ -99,7 +99,7 @@ like($new_id, qr/^\d+$/, qq/Good call to add_schema(SUBJECT=>'$subject', TYPE=>'
 
 my $subjects = $sr->get_subjects();
 isa_ok($subjects, 'ARRAY', qq/Subjects/);
-print STDERR Dumper $subjects;
+#print STDERR Dumper $subjects;
 
 my $versions = $sr->get_schema_versions(SUBJECT => $subject, TYPE => $type);
 isa_ok($versions, 'ARRAY', qq/Schema versions/);
@@ -139,12 +139,23 @@ my $new_versions = $sr->get_schema_versions(SUBJECT => $subject, TYPE => $type);
 ok(scalar(@$new_versions)==scalar(@$versions)+1, qq/Expected +1 version/); 
 
 my $deleted_version = $sr->delete_schema(SUBJECT => $subject, TYPE => $type, VERSION => 9999); 
-isa_ok($deleted_version, 'HASH', qq/Previous schema deletion failure/);
+isa_ok($deleted_version, 'HASH', qq/Previous schema deletion failure due to unknown version/);
+
+$deleted_version = $sr->delete_schema(SUBJECT => $subject, TYPE => $type); 
+ok(!defined $deleted_version, qq/Previous schema deletion failure due to unspecified version/);
 
 $deleted_version = $sr->delete_schema(SUBJECT => $subject, TYPE => $type, VERSION => $new_versions->[0]); 
 ok($deleted_version == $new_versions->[0], qq/Previous schema deletion/);
 
+$deleted_version = $sr->delete_all_schemas(SUBJECT => $subject, TYPE => $type);
+isa_ok($deleted_version, 'ARRAY', qq/Delete all schemas/);
 
-my $deleted = $sr->delete_subject(SUBJECT => $subject, TYPE => $type);
+$newest_id = $sr->add_schema(SUBJECT => $subject, TYPE => $type, SCHEMA => $compliant_schema);
+like($newest_id, qr/^\d+$/, qq/Add new schema/);
+
+my $deleted = $sr->delete_subject(SUBJECT => 'UNKNOWN-SUBJECT', TYPE => $type);
+isa_ok($deleted, 'HASH', qq/Unknown subject deletion/);
+
+$deleted = $sr->delete_subject(SUBJECT => $subject, TYPE => $type);
 isa_ok($deleted, 'ARRAY', qq/Subject deletion/);
 

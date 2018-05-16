@@ -170,11 +170,10 @@ sub get_schema {
 
 
 # Delete a specific version of the schema registered under a subject
-# $ curl -X DELETE http://localhost:8081/subjects/Kafka-value/versions/3
-#   3
+#
 # SUBJECT...: the name of the Kafka topic
 # TYPE......: the type of schema ("key" or "value")
-# SCHEMA....: the schema (HASH) to check for
+# VERSION...: the schema version to delete
 #
 # Returns the deleted version number (NUMBER)
 sub delete_schema {
@@ -186,9 +185,8 @@ sub delete_schema {
 				&& $params{SUBJECT} =~ m/^.+$/
 				&& $params{TYPE} =~ m/^key|value$/;
 	return undef
-		if	defined($params{VERSION}) 
-			&& $params{VERSION} !~ m/^\d+$/;
-	$params{VERSION} = 'latest' unless defined($params{VERSION});
+		unless	defined($params{VERSION}) 
+				&& $params{VERSION} =~ m/^\d+$/;
 	$self->_client()->DELETE('/subjects/' . $params{SUBJECT} . '-' . $params{TYPE} . '/versions/' . $params{VERSION});
 	my $res = $self->_client()->responseContent();
 	if ( $self->_client()->responseCode() >= 200 && $self->_client()->responseCode() < 300 ) {
@@ -200,13 +198,21 @@ sub delete_schema {
 
 
 # Delete all versions of the schema registered under subject "Kafka-value"
-# $ curl -X DELETE http://localhost:8081/subjects/Kafka-value
-#   [1, 2, 3, 4, 5]
+#
+# SUBJECT...: the name of the Kafka topic
+# TYPE......: the type of schema ("key" or "value")
+#
+# Returns the list of deleted versions 
 sub delete_all_schemas {
-	# subject	STRING
-	# type		STRING ("key" || "value")
-	#
-	# returns the list of deleted versions (NUMBER[])
+	my $self = shift;
+	my %params = @_;
+	return undef
+		unless	defined($params{SUBJECT}) 
+				&& defined($params{TYPE}) 
+				&& $params{SUBJECT} =~ m/^.+$/
+				&& $params{TYPE} =~ m/^key|value$/;
+	$self->_client()->DELETE('/subjects/' . $params{SUBJECT} . '-' . $params{TYPE});
+	my $res = decode_json($self->_client()->responseContent());
 }
 
 
