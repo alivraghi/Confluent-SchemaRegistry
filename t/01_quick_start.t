@@ -8,7 +8,7 @@ $Data::Dumper::Terse = 1;
 $Data::Dumper::Useqq = 1;
 
 #use Test::More qw( no_plan );
-use Test::More tests => 34;
+use Test::More tests => 32;
 
 BEGIN { use_ok('Confluent::SchemaRegistry', qq/Using/); }
 
@@ -75,17 +75,11 @@ my $non_compliant_schema = {
 my $subject = 'confluent-schema-registry-' . time;
 my $type = 'value';
 
-
-
 my $sr;
-$sr = $class->new('HOST','localhost1', 'PORT','8081');
-ok(!defined($sr), qq/Invalid host/);
-$sr = $class->new('HOST','localhost', 'PORT','8082');
-ok(!defined($sr), qq/Invalid port/);
 
 SKIP: {
 
-	$sr = new_ok($class => [ 'HOST','localhost', 'PORT','8081' ], qq/Valid host and port/);
+	$sr = new_ok($class => [ 'host', 'http://localhost:8081' ], qq/Valid REST client config/);
 	
 	skip qq/Confluent Schema Registry service is not up or isn't running on localhost:8081/, 30 unless defined $sr;
 	

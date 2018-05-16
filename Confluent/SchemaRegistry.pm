@@ -1,5 +1,27 @@
 package Confluent::SchemaRegistry;
 
+=head1 NAME
+ 
+Confluent::SchemaRegistry - A simple client for interacting with B<Confluent Schema Registry>.
+ 
+=head1 SYNOPSIS
+ 
+ use Confluent::SchemaRegistry;
+  
+ my $sr = Confluent::SchemaRegistry->new( { host => 'https://my-schema-registry.org' });
+ 
+=head1 DESCRIPTION
+ 
+C<Confluent::SchemaRegistry> provides a simple way to interact with B<Confluent Schema Registry>
+(L<https://docs.confluent.io/current/schema-registry/docs/index.html>) enabling writing into 
+B<Apache Kafka> (L<https://kafka.apache.org/>) according to I<Apache Avro> schema specification 
+(L<https://avro.apache.org/>).
+ 
+=cut
+ 
+=head1 METHODS
+ 
+=cut
 use strict;
 use warnings;
 
@@ -11,24 +33,82 @@ $Data::Dumper::Terse = 1;
 $Data::Dumper::Useqq = 1;
 
 
-# PROTOCOL	STRING
-# HOST		STRING
-# PORT		NUMBER
+=head2 Construction
+ 
+=head3 new( [%config] )
+ 
+Construct a new C<Confluent::SchemaRegistry>. Takes an optional hash that provides 
+configuration flags for the L<REST::Client> internal object.
+
+The config flags, U<according to C<REST::Client::new> specs>, are:
+ 
+=over 4
+ 
+=item host
+ 
+The host at which I<Schema Registry> is listening.
+
+The default is L<http://localhost:8081>
+ 
+=item timeout
+ 
+A timeout in seconds for requests made with the client.  After the timeout the
+client will return a 500.
+ 
+The default is 5 minutes.
+ 
+=item cert
+ 
+The path to a X509 certificate file to be used for client authentication.
+ 
+The default is to not use a certificate/key pair.
+ 
+=item key
+ 
+The path to a X509 key file to be used for client authentication.
+ 
+The default is to not use a certificate/key pair.
+ 
+=item ca
+ 
+The path to a certificate authority file to be used to verify host
+certificates.
+ 
+The default is to not use a certificates authority.
+ 
+=item pkcs12
+ 
+The path to a PKCS12 certificate to be used for client authentication.
+ 
+=item pkcs12password
+ 
+The password for the PKCS12 certificate specified with 'pkcs12'.
+ 
+=item follow
+ 
+Boolean that determins whether REST::Client attempts to automatically follow
+redirects/authentication.  
+ 
+The default is false.
+ 
+=item useragent
+ 
+An L<LWP::UserAgent> object, ready to make http requests.  
+ 
+REST::Client will provide a default for you if you do not set this.
+ 
+=back
+ 
+=cut
 sub new {
     my $this  = shift;
     my $class = ref($this) || $this;
-	my %params = @_;
+	my %config = @_;
 	my $self = {};
 	
-	# Verifica parametri di configurazione
-	$self->{_PROTOCOL} = $params{PROTOCOL} || 'http';
-	$self->{_HOST} = $params{HOST} || 'localhost';
-	$self->{_PORT} = $params{PORT} || '8081';
-	$self->{_BASE_URL} = $self->{_PROTOCOL} . '://' . $self->{_HOST} . ':' . $self->{_PORT};
-	
 	# Creazione client REST
-	$self->{_CLIENT} = REST::Client->new( host => $self->{_BASE_URL} )
-		or die "Unable to connect to $self->{_BASE_URL}: $!";
+	$config{host} = 'http://localhost:8081' unless defined $config{host};
+	$self->{_CLIENT} = REST::Client->new( %config );
 	$self->{_CLIENT}->addHeader('Content-Type', 'application/vnd.schemaregistry.v1+json');
 	
 	# Recupero la configurazione globale del registry per testare se le coordinate fanno
@@ -315,5 +395,21 @@ sub update_config {
 	# 
 	# returns compatibility (STRING)
 }
+
+=head1 TODO
+ 
+...
+ 
+=head1 AUTHOR
+ 
+Alvaro Livraghi, E<lt>alvarol@cpan.orgE<gt>
+ 
+=head1 COPYRIGHT
+ 
+Copyright 2008 - 2010 by Alvaro Livraghi
+ 
+This program is free software; you can redistribute it and/or modify it under the same terms as Perl itself.
+ 
+=cut
 
 1;
