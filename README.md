@@ -5,24 +5,21 @@ Confluent::SchemaRegistry - A simple client for interacting with **Confluent Sch
 # SYNOPSIS
 
     use Confluent::SchemaRegistry;
-     
+
     my $sr = Confluent::SchemaRegistry->new( { host => 'https://my-schema-registry.org' });
-    
 
 # DESCRIPTION
 
 `Confluent::SchemaRegistry` provides a simple way to interact with **Confluent Schema Registry**
-([https://docs.confluent.io/current/schema-registry/docs/index.html](https://docs.confluent.io/current/schema-registry/docs/index.html)) enabling writing into 
-**Apache Kafka** ([https://kafka.apache.org/](https://kafka.apache.org/)) according to _Apache Avro_ schema specification 
+([https://docs.confluent.io/current/schema-registry/docs/index.html](https://docs.confluent.io/current/schema-registry/docs/index.html)) enabling writing into
+**Apache Kafka** ([https://kafka.apache.org/](https://kafka.apache.org/)) according to _Apache Avro_ schema specification
 ([https://avro.apache.org/](https://avro.apache.org/)).
 
-# METHODS
-
-## Construction
+## Constructor
 
 ### new( \[%config\] )
 
-Construct a new `Confluent::SchemaRegistry`. Takes an optional hash that provides 
+Construct a new `Confluent::SchemaRegistry`. Takes an optional hash that provides
 configuration flags for the [REST::Client](https://metacpan.org/pod/REST::Client) internal object.
 
 The config flags, according to `REST::Client::new` specs, are:
@@ -70,15 +67,19 @@ The config flags, according to `REST::Client::new` specs, are:
 - follow
 
     Boolean that determins whether REST::Client attempts to automatically follow
-    redirects/authentication.  
+    redirects/authentication.
 
     The default is false.
 
 - useragent
 
-    An [LWP::UserAgent](https://metacpan.org/pod/LWP::UserAgent) object, ready to make http requests.  
+    An [LWP::UserAgent](https://metacpan.org/pod/LWP::UserAgent) object, ready to make http requests.
 
     REST::Client will provide a default for you if you do not set this.
+
+## METHODS
+
+`Confluent::SchemRegistry` exposes the following methods.
 
 ### add\_schema( %params )
 

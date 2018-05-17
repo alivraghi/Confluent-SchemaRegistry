@@ -19,11 +19,7 @@ B<Apache Kafka> (L<https://kafka.apache.org/>) according to I<Apache Avro> schem
 
 =cut
 
-=head1 METHODS
-
-=cut
-
-use 5.008;
+use 5.010;
 use strict;
 use warnings;
 
@@ -32,7 +28,7 @@ use REST::Client;
 
 our $VERSION = '0.01';
 
-=head2 Construction
+=head2 Constructor
 
 =head3 new( [%config] )
 
@@ -99,6 +95,7 @@ REST::Client will provide a default for you if you do not set this.
 =back
 
 =cut
+
 sub new {
     my $this  = shift;
     my $class = ref($this) || $this;
@@ -125,6 +122,11 @@ sub new {
 # Private method that returns REST client
 sub _client { $_[0]->{_CLIENT} }
 
+=head2 METHODS
+
+C<Confluent::SchemRegistry> exposes the following methods.
+
+=cut
 
 =head3 add_schema( %params )
 
@@ -151,6 +153,7 @@ the schema to add
 =back
 
 =cut
+
 sub add_schema {
 	my $self = shift;
 	my %params = @_;
