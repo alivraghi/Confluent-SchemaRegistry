@@ -15,8 +15,7 @@ DESCRIPTION
     according to *Apache Avro* schema specification
     (<https://avro.apache.org/>).
 
-METHODS
-  Construction
+  Constructor
    new( [%config] )
     Construct a new "Confluent::SchemaRegistry". Takes an optional hash that
     provides configuration flags for the REST::Client internal object.
@@ -66,6 +65,9 @@ METHODS
         An LWP::UserAgent object, ready to make http requests.
 
         REST::Client will provide a default for you if you do not set this.
+
+  METHODS
+    "Confluent::SchemRegistry" exposes the following methods.
 
    add_schema( %params )
     Registers a new schema version under a subject.

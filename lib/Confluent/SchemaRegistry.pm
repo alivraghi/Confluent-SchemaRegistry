@@ -23,7 +23,7 @@ use 5.010;
 use strict;
 use warnings;
 
-use JSON;
+use JSON::XS;
 use REST::Client;
 
 our $VERSION = '0.01';
