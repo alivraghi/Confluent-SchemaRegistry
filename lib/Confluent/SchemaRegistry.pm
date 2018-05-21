@@ -25,6 +25,7 @@ use warnings;
 
 use JSON::XS;
 use REST::Client;
+use Avro::Schema;
 
 our $VERSION = '0.01';
 
@@ -111,7 +112,7 @@ sub new {
 	# effettivamente riferimento ad un Confluent Schema Registry
 	$self = bless($self, $class);
 	my $tlc = $self->get_top_level_config();
-	if ($tlc !~ m/^BACKWARD|NONE$/) {
+	if ($tlc !~ m/^NONE|FULL|FORWARD|BACKWARD$/) {
 		return undef;
 	} else {
 		return $self;
@@ -397,7 +398,7 @@ sub get_top_level_config {
 #     http://localhost:8081/config
 #   {"compatibility":"NONE"}
 sub update_top_level_config {
-	# compatibility	STRING ('NONE' || 'BACKWARD')
+	# compatibility	STRING (NONE|FULL|FORWARD|BACKWARD)
 	#
 	# returns compatibility (STRING)
 }
@@ -411,7 +412,7 @@ sub update_top_level_config {
 sub update_config {
 	# type			STRING ("key" || "value")
 	# subject		STRING
-	# compatibility	STRING ('NONE' || 'BACKWARD')
+	# compatibility	STRING (NONE|FULL|FORWARD|BACKWARD)
 	#
 	# returns compatibility (STRING)
 }
