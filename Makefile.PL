@@ -10,6 +10,7 @@ test_requires 'Math::BigInt';
 test_requires 'Test::Exception';
 requires 'JSON::XS';
 requires 'REST::Client';
+requires 'Avro::Schema';
 
 WriteMakefile(
     NAME => 'Confluent::SchemaRegistry'

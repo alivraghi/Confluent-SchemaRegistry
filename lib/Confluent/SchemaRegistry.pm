@@ -25,6 +25,10 @@ use warnings;
 
 use JSON::XS;
 use REST::Client;
+use Try::Tiny;
+
+use Avro::Schema;
+
 
 our $VERSION = '0.01';
 
@@ -168,6 +172,15 @@ sub add_schema {
 	my $schema = encode_json({
 		schema => encode_json($params{SCHEMA})
 	});
+	print STDERR '$schema: ' . $schema, "\n";
+	my $avro_schema ;
+	try {
+		$avro_schema = Avro::Schema->parse($schema);
+	} catch {
+		print STDERR 'Invalid schema', "\n";
+	};
+	use Data::Dumper;
+	print STDERR '$avro_schema: ', Dumper($avro_schema), "\n";
 	my $res = decode_json($self->_client()->POST('/subjects/' . $params{SUBJECT} . '-' . $params{TYPE} . '/versions', $schema)->responseContent());
 	return $res->{id} if exists $res->{id};
 	return $res;
