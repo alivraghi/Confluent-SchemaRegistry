@@ -17,6 +17,8 @@ C<Confluent::SchemaRegistry> provides a simple way to interact with B<Confluent 
 B<Apache Kafka> (L<https://kafka.apache.org/>) according to I<Apache Avro> schema specification
 (L<https://avro.apache.org/>).
 
+Read full Schema Registry RESTful APIs here: L<https://docs.confluent.io/current/schema-registry/docs/api.html?_ga=2.234767710.1188695207.1526911788-1213051144.1524553242#>
+
 =cut
 
 use 5.010;
@@ -115,7 +117,7 @@ sub new {
 	# effettivamente riferimento ad un Confluent Schema Registry
 	$self = bless($self, $class);
 	my $tlc = $self->get_top_level_config();
-	if ($tlc !~ m/^BACKWARD|NONE$/) {
+	if ($tlc !~ m/^NONE|FULL|FORWARD|BACKWARD$/) {
 		return undef;
 	} else {
 		return $self;
@@ -410,7 +412,7 @@ sub get_top_level_config {
 #     http://localhost:8081/config
 #   {"compatibility":"NONE"}
 sub update_top_level_config {
-	# compatibility	STRING ('NONE' || 'BACKWARD')
+	# compatibility	STRING (NONE|FULL|FORWARD|BACKWARD)
 	#
 	# returns compatibility (STRING)
 }
@@ -424,7 +426,7 @@ sub update_top_level_config {
 sub update_config {
 	# type			STRING ("key" || "value")
 	# subject		STRING
-	# compatibility	STRING ('NONE' || 'BACKWARD')
+	# compatibility	STRING (NONE|FULL|FORWARD|BACKWARD)
 	#
 	# returns compatibility (STRING)
 }
