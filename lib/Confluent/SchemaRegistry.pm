@@ -235,7 +235,7 @@ sub get_schema_versions {
 #
 # SCHEMA_ID...: the globally unique id of the schema
 #
-# Returns schema (HASH) or the REST error
+# Returns the schema in Avro::Schema format or the REST error
 sub get_schema_by_id {
 	my $self = shift;
 	my %params = @_;
@@ -258,7 +258,7 @@ sub get_schema_by_id {
 # TYPE......: the type of schema ("key" or "value")
 # VERSION...: the schema version to fetch; if omitted the latest version is fetched
 #
-# Returns schema (HASH) or the REST error
+# Returns the schema in Avro::Schema format or the REST error
 sub get_schema {
 	my $self = shift;
 	my %params = @_;
