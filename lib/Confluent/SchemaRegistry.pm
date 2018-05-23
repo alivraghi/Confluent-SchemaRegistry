@@ -31,6 +31,7 @@ use Try::Tiny;
 
 use Avro::Schema;
 
+# FIXME check http status in every call to RESTful APIS
 
 our $VERSION = '0.01';
 
@@ -174,15 +175,6 @@ sub add_schema {
 	my $schema = encode_json({
 		schema => encode_json($params{SCHEMA})
 	});
-	print STDERR '$schema: ' . $schema, "\n";
-	my $avro_schema ;
-	try {
-		$avro_schema = Avro::Schema->parse($schema);
-	} catch {
-		print STDERR 'Invalid schema', "\n";
-	};
-	use Data::Dumper;
-	print STDERR '$avro_schema: ', Dumper($avro_schema), "\n";
 	my $res = decode_json($self->_client()->POST('/subjects/' . $params{SUBJECT} . '-' . $params{TYPE} . '/versions', $schema)->responseContent());
 	return $res->{id} if exists $res->{id};
 	return $res;
@@ -251,7 +243,9 @@ sub get_schema_by_id {
 				&& $params{SCHEMA_ID} =~ m/^\d+$/;
 	my $res = decode_json($self->_client()->GET('/schemas/ids/' . $params{SCHEMA_ID})->responseContent());
 	if (exists $res->{schema}) {
-		return decode_json($res->{schema});
+		return try {
+			Avro::Schema->parse($res->{schema});
+		};
 	}
 	return $res;
 }
@@ -278,7 +272,9 @@ sub get_schema {
 	$params{VERSION} = 'latest' unless defined($params{VERSION});
 	my $res = decode_json($self->_client()->GET('/subjects/' . $params{SUBJECT} . '-' . $params{TYPE} . '/versions/' . $params{VERSION})->responseContent());
 	if (exists $res->{schema}) {
-		return decode_json($res->{schema});
+		return try {
+			Avro::Schema->parse($res->{schema});
+		};
 	}
 	return $res;
 }

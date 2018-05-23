@@ -108,11 +108,11 @@ SKIP: {
 	ok(scalar(@$versions)==1, qq/Only one version for current subject/);
 
 	my $loaded_schema = $sr->get_schema_by_id(SCHEMA_ID => $new_id);
-	is_deeply($loaded_schema, $main_schema, qq/Comparison between main & loaded by id schema/);
+	is_deeply($loaded_schema, Avro::Schema->parse_struct($main_schema), qq/Comparison between main & loaded by id schema/);
 	$loaded_schema = $sr->get_schema(SUBJECT => $subject, TYPE => $type, VERSION => $versions->[$#$versions]);
-	is_deeply($loaded_schema, $main_schema, qq/Comparison between main & loaded by version number schema/);
+	is_deeply($loaded_schema, Avro::Schema->parse_struct($main_schema), qq/Comparison between main & loaded by version number schema/);
 	$loaded_schema = $sr->get_schema(SUBJECT => $subject, TYPE => $type);
-	is_deeply($loaded_schema, $main_schema, qq/Comparison between main & loaded by latest schema/);
+	is_deeply($loaded_schema, Avro::Schema->parse_struct($main_schema), qq/Comparison between main & loaded by latest schema/);
 
 	my $schema_info = $sr->check_schema(SUBJECT => $subject, TYPE => $type);
 	ok(!defined($schema_info), 'Missing parameter SCHEMA calling check_schema() method');
