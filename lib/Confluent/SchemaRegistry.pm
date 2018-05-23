@@ -32,6 +32,7 @@ use Try::Tiny;
 use Avro::Schema;
 
 # FIXME check http status in every call to RESTful APIS
+# FIXME implement update_top_level_congig() and update_config() methods
 
 our $VERSION = '0.01';
 
@@ -402,7 +403,7 @@ sub get_top_level_config {
 }
 
 
-# # Update compatibility requirements globally
+# Update compatibility requirements globally
 # $ curl -X PUT -H "Content-Type: application/vnd.schemaregistry.v1+json" \
 #     --data '{"compatibility": "NONE"}' \
 #     http://localhost:8081/config
@@ -414,7 +415,7 @@ sub update_top_level_config {
 }
 
 
-# # Update compatibility requirements under the subject "Kafka-value"
+# Update compatibility requirements under the subject "Kafka-value"
 # $ curl -X PUT -H "Content-Type: application/vnd.schemaregistry.v1+json" \
 #     --data '{"compatibility": "BACKWARD"}' \
 #     http://localhost:8081/config/Kafka-value
