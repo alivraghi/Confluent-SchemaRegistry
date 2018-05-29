@@ -8,7 +8,7 @@ $Data::Dumper::Terse = 1;
 $Data::Dumper::Useqq = 1;
 
 #use Test::More qw( no_plan );
-use Test::More tests => 32;
+use Test::More tests => 34;
 
 BEGIN { use_ok('Confluent::SchemaRegistry', qq/Using/); }
 
@@ -93,8 +93,7 @@ SKIP: {
 	ok(!defined $sr->add_schema(SUBJECT => $subject, TYPE => 'foo'), qq/Bad TYPE in call to add_schema/);
 	ok(!defined $sr->add_schema(SUBJECT => $subject, TYPE => $type), qq/Bad call to add_schema/);
 
-	my $error = $sr->add_schema(SUBJECT => $subject, TYPE => $type, SCHEMA => $invalid_schema);
-	isa_ok($error, 'HASH', qq/Invalid schema/);
+	ok(!defined $sr->add_schema(SUBJECT => $subject, TYPE => $type, SCHEMA => $invalid_schema), qq/Invalid schema/);
 
 	my $new_id = $sr->add_schema(SUBJECT => $subject, TYPE => $type, SCHEMA => $main_schema);
 	like($new_id, qr/^\d+$/, qq/Good call to add_schema(SUBJECT=>'$subject', TYPE=>'$type', SCHEMA=>'...') returns $new_id/);
@@ -113,6 +112,8 @@ SKIP: {
 	is_deeply($loaded_schema, Avro::Schema->parse_struct($main_schema), qq/Comparison between main & loaded by version number schema/);
 	$loaded_schema = $sr->get_schema(SUBJECT => $subject, TYPE => $type);
 	is_deeply($loaded_schema, Avro::Schema->parse_struct($main_schema), qq/Comparison between main & loaded by latest schema/);
+	ok(!defined $sr->get_schema(SUBJECT => 'unknown subject', TYPE => $type), qq/Unknown schema/);
+	ok($sr->get_error()->{error_code} == 40401, qq/Unknown schema/);
 
 	my $schema_info = $sr->check_schema(SUBJECT => $subject, TYPE => $type);
 	ok(!defined($schema_info), 'Missing parameter SCHEMA calling check_schema() method');
@@ -140,8 +141,8 @@ SKIP: {
 	my $new_versions = $sr->get_schema_versions(SUBJECT => $subject, TYPE => $type); 
 	ok(scalar(@$new_versions)==scalar(@$versions)+1, qq/Expected +1 version/); 
 
-	my $deleted_version = $sr->delete_schema(SUBJECT => $subject, TYPE => $type, VERSION => 9999); 
-	isa_ok($deleted_version, 'HASH', qq/Previous schema deletion failure due to unknown version/);
+	my $deleted_version;
+	ok(!defined $sr->delete_schema(SUBJECT => $subject, TYPE => $type, VERSION => 9999), qq/Previous schema deletion failure due to unknown version/);
 
 	$deleted_version = $sr->delete_schema(SUBJECT => $subject, TYPE => $type); 
 	ok(!defined $deleted_version, qq/Previous schema deletion failure due to unspecified version/);
@@ -155,11 +156,11 @@ SKIP: {
 	$newest_id = $sr->add_schema(SUBJECT => $subject, TYPE => $type, SCHEMA => $compliant_schema);
 	like($newest_id, qr/^\d+$/, qq/Add new schema/);
 
-	my $deleted = $sr->delete_subject(SUBJECT => 'UNKNOWN-SUBJECT', TYPE => $type);
-	isa_ok($deleted, 'HASH', qq/Unknown subject deletion/);
+	my $deleted;
+	ok(!defined $sr->delete_subject(SUBJECT => 'UNKNOWN-SUBJECT', TYPE => $type), qq/Unknown subject deletion/);
 
 	$deleted = $sr->delete_subject(SUBJECT => $subject, TYPE => $type);
 	isa_ok($deleted, 'ARRAY', qq/Subject deletion/);
 
 }
-
+;

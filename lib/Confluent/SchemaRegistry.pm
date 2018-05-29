@@ -27,7 +27,9 @@ use warnings;
 
 use JSON::XS;
 use REST::Client;
+use HTTP::Status qw/:is/;
 use Try::Tiny;
+use Aspect;
 
 use Avro::Schema;
 
@@ -35,6 +37,7 @@ use Avro::Schema;
 # FIXME implement update_top_level_congig() and update_config() methods
 
 our $VERSION = '0.01';
+
 
 =head2 Constructor
 
@@ -114,21 +117,76 @@ sub new {
 	$config{host} = 'http://localhost:8081' unless defined $config{host};
 	$self->{_CLIENT} = REST::Client->new( %config );
 	$self->{_CLIENT}->addHeader('Content-Type', 'application/vnd.schemaregistry.v1+json');
+	$self->{_ERROR} = undef;
+	$self->{_RESPONSE} = undef;
 
+	$self = bless($self, $class);
+
+	#
+	# BEGIN Using Aspect to simplify error handling
+	#
+	my $rest_client_calls = qr/^REST::Client::(GET|PUT|POST|DELETE)/;
+
+	# Clear internal error and response before every REST::Client call
+	before {
+		$self->_clear_response();
+		$self->_clear__error();
+	} call $rest_client_calls;
+	
+	# Verify if REST calls are successfull 
+	after {
+		if (is_success($_->self->responseCode())) {
+			$self->_set_response( $_->self->responseContent() );
+			$_->return_value(1); # success
+		} else {
+			$self->_set_error( $_->self->responseContent() );
+			$_->return_value(0); # failure
+		}
+		#print STDERR $_->self->responseCode() . "\n";
+	} call $rest_client_calls;
+	
+	#
+	# END Aspect
+	#
+	
 	# Recupero la configurazione globale del registry per testare se le coordinate fanno
 	# effettivamente riferimento ad un Confluent Schema Registry
-	$self = bless($self, $class);
-	my $tlc = $self->get_top_level_config();
-	if ($tlc !~ m/^NONE|FULL|FORWARD|BACKWARD$/) {
-		return undef;
-	} else {
-		return $self;
-	}
+	my $res = $self->get_top_level_config();
+	return undef
+		unless $res =~ m/^NONE|FULL|FORWARD|BACKWARD$/;
+		
+	return $self;
 }
 
 
-# Private method that returns REST client
-sub _client { $_[0]->{_CLIENT} }
+##############################################################################################
+# PRIVATE METHODS
+#
+ 
+sub _client           { $_[0]->{_CLIENT}                                } # RESTful client
+sub _clear__error     { $_[0]->_set_error(undef)                        } # clear internal error
+sub _set_error        { $_[0]->{_ERROR} = $_[0]->_set_content($_[1])    } # set internal error
+sub _get_error        { $_[0]->{_ERROR}                                 } # get internal error
+sub _clear_response   { $_[0]->_set_response(undef)                     } # clear http response
+sub _set_response     { $_[0]->{_RESPONSE} = $_[0]->_set_content($_[1]) } # save http response 
+sub _get_response     { $_[0]->{_RESPONSE}                              } # return http response
+
+sub _set_content { 
+	my $self = shift;
+	my $res = shift;
+	return undef
+		unless defined($res);
+	return try {
+		decode_json($res);
+	} catch {
+		$res;
+	}
+} 
+
+
+##############################################################################################
+# PUBLIC METHODS
+#
 
 =head2 METHODS
 
@@ -136,11 +194,30 @@ C<Confluent::SchemRegistry> exposes the following methods.
 
 =cut
 
+
+=head3 get_response_content()
+
+Returns the body (content) of the last method call to Schema Registry.
+
+=cut
+
+sub get_response_content { $_[0]->_get_response() }
+	
+
+=head3 get_error()
+
+Returns the error structure of the last method call to Schema Registry.
+
+=cut
+
+sub get_error { $_[0]->_get_error() }
+	
+
 =head3 add_schema( %params )
 
 Registers a new schema version under a subject.
 
-Returns the generated id for the new schema or a RESTful error.
+Returns the generated id for the new schema or C<undef>.
 
 Params keys are:
 
@@ -176,19 +253,19 @@ sub add_schema {
 	my $schema = encode_json({
 		schema => encode_json($params{SCHEMA})
 	});
-	my $res = decode_json($self->_client()->POST('/subjects/' . $params{SUBJECT} . '-' . $params{TYPE} . '/versions', $schema)->responseContent());
-	return $res->{id} if exists $res->{id};
-	return $res;
+	return $self->_get_response()->{id}
+		if $self->_client()->POST('/subjects/' . $params{SUBJECT} . '-' . $params{TYPE} . '/versions', $schema);
+	return undef;
 }
 
 
 # List all the registered subjects
 #
-# Returns the list of subjects (ARRAY) or the REST error (HASH)
+# Returns the list of subjects (ARRAY) or C<undef>
 sub get_subjects {
 	my $self = shift;
-	my $res = $self->_client()->GET('/subjects')->responseContent();
-	return decode_json($res);
+	$self->_client()->GET('/subjects');
+	return $self->_get_response();
 }
 
 
@@ -198,7 +275,7 @@ sub get_subjects {
 # TYPE......: the type of schema ("key" or "value")
 # SCHEMA....: the schema (HASH) to check for
 #
-# Returns the list of versions for the deleted subject or the REST error
+# Returns the list of versions for the deleted subject or C<undef>
 sub delete_subject {
 	my $self = shift;
 	my %params = @_;
@@ -207,9 +284,8 @@ sub delete_subject {
 				&& defined($params{TYPE})
 				&& $params{SUBJECT} =~ m/^.+$/
 				&& $params{TYPE} =~ m/^key|value$/;
-	my $res = decode_json($self->_client()->DELETE('/subjects/' . $params{SUBJECT} . '-' . $params{TYPE})->responseContent());
-	return $res;
-
+	$self->_client()->DELETE('/subjects/' . $params{SUBJECT} . '-' . $params{TYPE});
+	return $self->_get_response()
 }
 
 
@@ -227,7 +303,8 @@ sub get_schema_versions {
 				&& defined($params{TYPE})
 				&& $params{SUBJECT} =~ m/^.+$/
 				&& $params{TYPE} =~ m/^key|value$/;
-	return decode_json($self->_client()->GET('/subjects/' . $params{SUBJECT} . '-' . $params{TYPE} . '/versions')->responseContent());
+	$self->_client()->GET('/subjects/' . $params{SUBJECT} . '-' . $params{TYPE} . '/versions');
+	return $self->_get_response();
 }
 
 
@@ -235,20 +312,21 @@ sub get_schema_versions {
 #
 # SCHEMA_ID...: the globally unique id of the schema
 #
-# Returns the schema in Avro::Schema format or the REST error
+# Returns the schema in Avro::Schema format or C<undef>
 sub get_schema_by_id {
 	my $self = shift;
 	my %params = @_;
 	return undef
 		unless	defined($params{SCHEMA_ID})
 				&& $params{SCHEMA_ID} =~ m/^\d+$/;
-	my $res = decode_json($self->_client()->GET('/schemas/ids/' . $params{SCHEMA_ID})->responseContent());
-	if (exists $res->{schema}) {
-		return try {
-			Avro::Schema->parse($res->{schema});
-		};
+	if ( $self->_client()->GET('/schemas/ids/' . $params{SCHEMA_ID})) {
+		if (exists $self->_get_response()->{schema}) {
+			return try {
+				Avro::Schema->parse($self->_get_response()->{schema});
+			};
+		}
 	}
-	return $res;
+	return undef;
 }
 
 
@@ -258,7 +336,7 @@ sub get_schema_by_id {
 # TYPE......: the type of schema ("key" or "value")
 # VERSION...: the schema version to fetch; if omitted the latest version is fetched
 #
-# Returns the schema in Avro::Schema format or the REST error
+# Returns the schema in Avro::Schema format or C<undef>
 sub get_schema {
 	my $self = shift;
 	my %params = @_;
@@ -271,13 +349,14 @@ sub get_schema {
 		if	defined($params{VERSION})
 			&& $params{VERSION} !~ m/^\d+$/;
 	$params{VERSION} = 'latest' unless defined($params{VERSION});
-	my $res = decode_json($self->_client()->GET('/subjects/' . $params{SUBJECT} . '-' . $params{TYPE} . '/versions/' . $params{VERSION})->responseContent());
-	if (exists $res->{schema}) {
-		return try {
-			Avro::Schema->parse($res->{schema});
-		};
+	if ($self->_client()->GET('/subjects/' . $params{SUBJECT} . '-' . $params{TYPE} . '/versions/' . $params{VERSION})) {
+		if (exists $self->_get_response()->{schema}) {
+			return try {
+				Avro::Schema->parse($self->_get_response()->{schema});
+			};
+		}
 	}
-	return $res;
+	return undef;
 }
 
 
@@ -287,7 +366,7 @@ sub get_schema {
 # TYPE......: the type of schema ("key" or "value")
 # VERSION...: the schema version to delete
 #
-# Returns the deleted version number (NUMBER)
+# Returns the deleted version number (NUMBER) or C<undef>
 sub delete_schema {
 	my $self = shift;
 	my %params = @_;
@@ -300,12 +379,7 @@ sub delete_schema {
 		unless	defined($params{VERSION})
 				&& $params{VERSION} =~ m/^\d+$/;
 	$self->_client()->DELETE('/subjects/' . $params{SUBJECT} . '-' . $params{TYPE} . '/versions/' . $params{VERSION});
-	my $res = $self->_client()->responseContent();
-	if ( $self->_client()->responseCode() >= 200 && $self->_client()->responseCode() < 300 ) {
-		return $res;
-	} else {
-		return decode_json($res);
-	}
+	return $self->_get_response();
 }
 
 
@@ -314,7 +388,7 @@ sub delete_schema {
 # SUBJECT...: the name of the Kafka topic
 # TYPE......: the type of schema ("key" or "value")
 #
-# Returns the list of deleted versions
+# Returns the list of deleted versions or C<undef>
 sub delete_all_schemas {
 	my $self = shift;
 	my %params = @_;
@@ -324,7 +398,7 @@ sub delete_all_schemas {
 				&& $params{SUBJECT} =~ m/^.+$/
 				&& $params{TYPE} =~ m/^key|value$/;
 	$self->_client()->DELETE('/subjects/' . $params{SUBJECT} . '-' . $params{TYPE});
-	my $res = decode_json($self->_client()->responseContent());
+	return $self->_get_response();
 }
 
 
@@ -334,7 +408,7 @@ sub delete_all_schemas {
 # TYPE......: the type of schema ("key" or "value")
 # SCHEMA....: the schema (HASH) to check for
 #
-# If found, returns the schema info (HASH) otherwise a REST error
+# If found, returns the schema info (HASH) otherwise C<undef>
 sub check_schema {
 	my $self = shift;
 	my %params = @_;
@@ -349,7 +423,8 @@ sub check_schema {
 	my $schema = encode_json({
 		schema => encode_json($params{SCHEMA})
 	});
-	return decode_json($self->_client()->POST('/subjects/' . $params{SUBJECT} . '-' . $params{TYPE}, $schema)->responseContent());
+	$self->_client()->POST('/subjects/' . $params{SUBJECT} . '-' . $params{TYPE}, $schema);
+	return $self->_get_response();
 }
 
 
@@ -379,27 +454,21 @@ sub test_schema {
 	my $schema = {
 		schema => encode_json($params{SCHEMA})
 	};
-	my $res = decode_json($self->_client()->POST('/compatibility/subjects/' . $params{SUBJECT} . '-' . $params{TYPE} . '/versions/' . $params{VERSION}, encode_json($schema))->responseContent());
-	if (exists($res->{is_compatible})) {
-		return $res->{is_compatible};
-	}
-	return $res;
+	$self->_client()->POST('/compatibility/subjects/' . $params{SUBJECT} . '-' . $params{TYPE} . '/versions/' . $params{VERSION}, encode_json($schema));
+	return $self->_get_response()->{is_compatible}
+		if exists($self->_get_response()->{is_compatible});
+	return undef;
 }
 
 
 # Get top level config
 #
-# Return top-level compatibility level
+# Return top-level compatibility level or C<undef>
 sub get_top_level_config {
 	my $self = shift;
-	my $res = $self->_client()->GET('/config')->responseContent();
-	return '' unless $res;
-	local $@;
-	eval {
-		$res = decode_json($res);
-	};
-	return '' if $@;
-	return $res->{compatibilityLevel} || '';
+	return $self->_get_response()->{compatibilityLevel}
+		if $self->_client()->GET('/config');
+	return undef;
 }
 
 

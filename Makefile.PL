@@ -12,6 +12,7 @@ requires 'JSON::XS';
 requires 'REST::Client';
 requires 'Try::Tiny';
 requires 'Avro::Schema';
+requires 'Aspect';
 
 WriteMakefile(
     NAME => 'Confluent::SchemaRegistry'
