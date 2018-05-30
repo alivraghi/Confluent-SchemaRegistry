@@ -116,25 +116,8 @@ sub new {
 	$config{host} = 'http://localhost:8081' unless defined $config{host};
 	$self->{_CLIENT} = REST::Client->new( %config );
 	$self->{_CLIENT}->addHeader('Content-Type', 'application/vnd.schemaregistry.v1+json');
-	$self->{_CLIENT}->{_ERROR}        = undef;
-	$self->{_CLIENT}->{_RESPONSE}     = undef;
-#	$self->{_CLIENT}->_clear_error    = sub { $_[0]->_set_error(undef)                        }; # clear internal error
-#	$self->{_CLIENT}->_set_error      = sub { $_[0]->{_ERROR} = $_[0]->_set_content($_[1])    }; # set internal error
-#	$self->{_CLIENT}->_get_error      = sub { $_[0]->{_ERROR}                                 }; # get internal error
-#	$self->{_CLIENT}->_clear_response = sub { $_[0]->_set_response(undef)                     }; # clear http response
-#	$self->{_CLIENT}->_set_response   = sub { $_[0]->{_RESPONSE} = $_[0]->_set_content($_[1]) }; # save http response 
-#	$self->{_CLIENT}->_get_response   = sub { $_[0]->{_RESPONSE}                              }; # return http response
-#	$self->{_CLIENT}->_set_content    = sub {
-#		my $self = shift;
-#		my $res = shift;
-#		return undef
-#			unless defined($res);
-#		return try {
-#			decode_json($res);
-#		} catch {
-#			$res;
-#		}
-#	};
+	$self->{_CLIENT}->{_ERROR}    = undef; # will be set in case of unsuccessfully responses
+	$self->{_CLIENT}->{_RESPONSE} = undef; # will be set with normalized response contents
 
 	$self = bless($self, $class);
 
@@ -163,10 +146,10 @@ before {
 # Verify if REST calls are successfull 
 after {
 	if (is_success($_->self->responseCode())) {
-		$_->self->{_RESPONSE} = _set_content( $_->self->responseContent() );
+		$_->self->{_RESPONSE} = _normalize_content( $_->self->responseContent() );
 		$_->return_value(1); # success
 	} else {
-		$_->self->{_ERROR} = _set_content( $_->self->responseContent() );
+		$_->self->{_ERROR} = _normalize_content( $_->self->responseContent() );
 		$_->return_value(0); # failure
 	}
 	#print STDERR $_->self->responseCode() . "\n";
@@ -182,10 +165,12 @@ after {
 # CLASS METHODS
 #
 
-sub _set_content { 
+sub _normalize_content { 
 	my $res = shift;
 	return undef
 		unless defined($res);
+	return $res
+		if ref($res) eq 'HASH';
 	return try {
 		decode_json($res);
 	} catch {
@@ -252,7 +237,7 @@ the name of the Kafka topic
 
 the type of schema ("key" or "value")
 
-=item SCHEMA ($hashref)
+=item SCHEMA ($hashref or $json)
 
 the schema to add
 
@@ -269,10 +254,10 @@ sub add_schema {
 				&& $params{SUBJECT} =~ m/^.+$/
 				&& $params{TYPE} =~ m/^key|value$/;
 	return undef
-		unless	defined($params{SCHEMA})
-				&& ref($params{SCHEMA}) eq 'HASH';
-	my $schema = encode_json({
-		schema => encode_json($params{SCHEMA})
+		unless	defined($params{SCHEMA});
+	my $schema = _normalize_content($params{SCHEMA});
+	$schema = encode_json({
+		schema => encode_json($schema)
 	});
 	return $self->_get_response()->{id}
 		if $self->_client()->POST('/subjects/' . $params{SUBJECT} . '-' . $params{TYPE} . '/versions', $schema);
@@ -294,7 +279,6 @@ sub get_subjects {
 #
 # SUBJECT...: the name of the Kafka topic
 # TYPE......: the type of schema ("key" or "value")
-# SCHEMA....: the schema (HASH) to check for
 #
 # Returns the list of versions for the deleted subject or C<undef>
 sub delete_subject {
@@ -441,7 +425,7 @@ sub delete_all_schemas {
 #
 # SUBJECT...: the name of the Kafka topic
 # TYPE......: the type of schema ("key" or "value")
-# SCHEMA....: the schema (HASH) to check for
+# SCHEMA....: the schema (HASH or JSON) to check for
 #
 # If found, returns the schema info (HASH) otherwise C<undef>
 sub check_schema {
@@ -453,10 +437,10 @@ sub check_schema {
 				&& $params{SUBJECT} =~ m/^.+$/
 				&& $params{TYPE} =~ m/^key|value$/;
 	return undef
-		unless	defined($params{SCHEMA})
-				&& ref($params{SCHEMA}) eq 'HASH';
-	my $schema = encode_json({
-		schema => encode_json($params{SCHEMA})
+		unless	defined($params{SCHEMA});
+	my $schema = _normalize_content($params{SCHEMA});
+	$schema = encode_json({
+		schema => encode_json($schema)
 	});
 	$self->_client()->POST('/subjects/' . $params{SUBJECT} . '-' . $params{TYPE}, $schema);
 	return $self->_get_response();
@@ -468,7 +452,7 @@ sub check_schema {
 # SUBJECT...: the name of the Kafka topic
 # TYPE......: the type of schema ("key" or "value")
 # VERSION...: the schema version to test; if omitted latest version is used
-# SCHEMA....: the schema (HASH) to check for
+# SCHEMA....: the schema (HASH or JSON) to check for
 #
 # returns TRUE if the providied schema is compatible with the latest one (BOOLEAN)
 sub test_schema {
@@ -484,10 +468,10 @@ sub test_schema {
 			&& $params{VERSION} !~ m/^\d+$/;
 	$params{VERSION} = 'latest' unless defined($params{VERSION});
 	return undef
-		unless	defined($params{SCHEMA})
-				&& ref($params{SCHEMA}) eq 'HASH';
-	my $schema = {
-		schema => encode_json($params{SCHEMA})
+		unless	defined($params{SCHEMA});
+	my $schema = _normalize_content($params{SCHEMA});
+	$schema = {
+		schema => encode_json($schema)
 	};
 	$self->_client()->POST('/compatibility/subjects/' . $params{SUBJECT} . '-' . $params{TYPE} . '/versions/' . $params{VERSION}, encode_json($schema));
 	return $self->_get_response()->{is_compatible}
