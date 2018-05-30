@@ -33,8 +33,7 @@ use Aspect;
 
 use Avro::Schema;
 
-# FIXME check http status in every call to RESTful APIS
-# FIXME implement update_top_level_congig() and update_config() methods
+# FIXME implement update_top_level_config() and update_config() methods
 
 our $VERSION = '0.01';
 
@@ -117,38 +116,28 @@ sub new {
 	$config{host} = 'http://localhost:8081' unless defined $config{host};
 	$self->{_CLIENT} = REST::Client->new( %config );
 	$self->{_CLIENT}->addHeader('Content-Type', 'application/vnd.schemaregistry.v1+json');
-	$self->{_ERROR} = undef;
-	$self->{_RESPONSE} = undef;
+	$self->{_CLIENT}->{_ERROR}        = undef;
+	$self->{_CLIENT}->{_RESPONSE}     = undef;
+#	$self->{_CLIENT}->_clear_error    = sub { $_[0]->_set_error(undef)                        }; # clear internal error
+#	$self->{_CLIENT}->_set_error      = sub { $_[0]->{_ERROR} = $_[0]->_set_content($_[1])    }; # set internal error
+#	$self->{_CLIENT}->_get_error      = sub { $_[0]->{_ERROR}                                 }; # get internal error
+#	$self->{_CLIENT}->_clear_response = sub { $_[0]->_set_response(undef)                     }; # clear http response
+#	$self->{_CLIENT}->_set_response   = sub { $_[0]->{_RESPONSE} = $_[0]->_set_content($_[1]) }; # save http response 
+#	$self->{_CLIENT}->_get_response   = sub { $_[0]->{_RESPONSE}                              }; # return http response
+#	$self->{_CLIENT}->_set_content    = sub {
+#		my $self = shift;
+#		my $res = shift;
+#		return undef
+#			unless defined($res);
+#		return try {
+#			decode_json($res);
+#		} catch {
+#			$res;
+#		}
+#	};
 
 	$self = bless($self, $class);
 
-	#
-	# BEGIN Using Aspect to simplify error handling
-	#
-	my $rest_client_calls = qr/^REST::Client::(GET|PUT|POST|DELETE)/;
-
-	# Clear internal error and response before every REST::Client call
-	before {
-		$self->_clear_response();
-		$self->_clear__error();
-	} call $rest_client_calls;
-	
-	# Verify if REST calls are successfull 
-	after {
-		if (is_success($_->self->responseCode())) {
-			$self->_set_response( $_->self->responseContent() );
-			$_->return_value(1); # success
-		} else {
-			$self->_set_error( $_->self->responseContent() );
-			$_->return_value(0); # failure
-		}
-		#print STDERR $_->self->responseCode() . "\n";
-	} call $rest_client_calls;
-	
-	#
-	# END Aspect
-	#
-	
 	# Recupero la configurazione globale del registry per testare se le coordinate fanno
 	# effettivamente riferimento ad un Confluent Schema Registry
 	my $res = $self->get_top_level_config();
@@ -159,20 +148,41 @@ sub new {
 }
 
 
-##############################################################################################
-# PRIVATE METHODS
 #
- 
-sub _client           { $_[0]->{_CLIENT}                                } # RESTful client
-sub _clear__error     { $_[0]->_set_error(undef)                        } # clear internal error
-sub _set_error        { $_[0]->{_ERROR} = $_[0]->_set_content($_[1])    } # set internal error
-sub _get_error        { $_[0]->{_ERROR}                                 } # get internal error
-sub _clear_response   { $_[0]->_set_response(undef)                     } # clear http response
-sub _set_response     { $_[0]->{_RESPONSE} = $_[0]->_set_content($_[1]) } # save http response 
-sub _get_response     { $_[0]->{_RESPONSE}                              } # return http response
+# BEGIN Using Aspect to simplify error handling
+#
+my $rest_client_calls = qr/^REST::Client::(GET|PUT|POST|DELETE)/;
+
+# Clear internal error and response before every REST::Client call
+before {
+	$_->self->{_RESPONSE} = undef;
+	$_->self->{_ERROR} = undef;
+	#print STDERR 'Calling ' . $_->sub_name . ' : ';
+} call $rest_client_calls;
+
+# Verify if REST calls are successfull 
+after {
+	if (is_success($_->self->responseCode())) {
+		$_->self->{_RESPONSE} = _set_content( $_->self->responseContent() );
+		$_->return_value(1); # success
+	} else {
+		$_->self->{_ERROR} = _set_content( $_->self->responseContent() );
+		$_->return_value(0); # failure
+	}
+	#print STDERR $_->self->responseCode() . "\n";
+} call $rest_client_calls;
+
+#
+# END Aspect
+#
+
+
+
+##############################################################################################
+# CLASS METHODS
+#
 
 sub _set_content { 
-	my $self = shift;
 	my $res = shift;
 	return undef
 		unless defined($res);
@@ -182,6 +192,17 @@ sub _set_content {
 		$res;
 	}
 } 
+
+
+
+##############################################################################################
+# PRIVATE METHODS
+#
+ 
+sub _client       { $_[0]->{_CLIENT}            } # RESTful client
+sub _get_error    { $_[0]->_client->{_ERROR}    } # get internal error
+sub _get_response { $_[0]->_client->{_RESPONSE} } # return http response
+
 
 
 ##############################################################################################
@@ -321,9 +342,16 @@ sub get_schema_by_id {
 				&& $params{SCHEMA_ID} =~ m/^\d+$/;
 	if ( $self->_client()->GET('/schemas/ids/' . $params{SCHEMA_ID})) {
 		if (exists $self->_get_response()->{schema}) {
-			return try {
-				Avro::Schema->parse($self->_get_response()->{schema});
+			my $avro_schema;
+			try {
+				$avro_schema = Avro::Schema->parse($self->_get_response()->{schema});
+			} catch {
+				$self->_set_error({
+					error_code => -1,
+					message => $@
+				});
 			};
+			return $avro_schema;
 		}
 	}
 	return undef;
@@ -351,9 +379,16 @@ sub get_schema {
 	$params{VERSION} = 'latest' unless defined($params{VERSION});
 	if ($self->_client()->GET('/subjects/' . $params{SUBJECT} . '-' . $params{TYPE} . '/versions/' . $params{VERSION})) {
 		if (exists $self->_get_response()->{schema}) {
-			return try {
-				Avro::Schema->parse($self->_get_response()->{schema});
+			my $avro_schema;
+			try {
+				$avro_schema = Avro::Schema->parse($self->_get_response()->{schema});
+			} catch {
+				$self->_set_error({
+					error_code => -1,
+					message => $@
+				});
 			};
+			return $avro_schema;
 		}
 	}
 	return undef;
