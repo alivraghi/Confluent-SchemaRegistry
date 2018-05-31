@@ -184,16 +184,17 @@ sub _normalize_content {
 # PRIVATE METHODS
 #
  
-sub _client       { $_[0]->{_CLIENT}            } # RESTful client
-sub _get_error    { $_[0]->_client->{_ERROR}    } # get internal error
-sub _get_response { $_[0]->_client->{_RESPONSE} } # return http response
+sub _client       { $_[0]->{_CLIENT}                                      } # RESTful client
+sub _set_error    { $_[0]->_client->{_ERROR} = _normalize_content($_[1]); } # get internal error
+sub _get_error    { $_[0]->_client->{_ERROR}                              } # get internal error
+sub _get_response { $_[0]->_client->{_RESPONSE}                           } # return http response
 
 
 
 ##############################################################################################
 # PUBLIC METHODS
 #
-
+ 
 =head2 METHODS
 
 C<Confluent::SchemRegistry> exposes the following methods.
@@ -332,7 +333,7 @@ sub get_schema_by_id {
 			} catch {
 				$self->_set_error({
 					error_code => -1,
-					message => $@
+					message => $_->{'-text'}
 				});
 			};
 			return $avro_schema;
