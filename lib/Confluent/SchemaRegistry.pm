@@ -370,7 +370,7 @@ sub get_schema {
 			} catch {
 				$self->_set_error({
 					error_code => -1,
-					message => $@
+					message => $_->{'-text'}
 				});
 			};
 			return $avro_schema;
