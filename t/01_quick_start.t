@@ -109,9 +109,9 @@ SKIP: {
 	my $loaded_schema = $sr->get_schema_by_id(SCHEMA_ID => $new_id);
 	is_deeply($loaded_schema, Avro::Schema->parse_struct($main_schema), qq/Comparison between main & loaded by id schema/);
 	$loaded_schema = $sr->get_schema(SUBJECT => $subject, TYPE => $type, VERSION => $versions->[$#$versions]);
-	is_deeply($loaded_schema, Avro::Schema->parse_struct($main_schema), qq/Comparison between main & loaded by version number schema/);
+	is_deeply($loaded_schema->{schema}, Avro::Schema->parse_struct($main_schema), qq/Comparison between main & loaded by version number schema/);
 	$loaded_schema = $sr->get_schema(SUBJECT => $subject, TYPE => $type);
-	is_deeply($loaded_schema, Avro::Schema->parse_struct($main_schema), qq/Comparison between main & loaded by latest schema/);
+	is_deeply($loaded_schema->{schema}, Avro::Schema->parse_struct($main_schema), qq/Comparison between main & loaded by latest schema/);
 	ok(!defined $sr->get_schema(SUBJECT => 'unknown subject', TYPE => $type), qq/Unknown schema/);
 	ok($sr->get_error()->{error_code} == 40401, qq/Unknown schema/);
 

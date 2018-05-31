@@ -363,18 +363,19 @@ sub get_schema {
 			&& $params{VERSION} !~ m/^\d+$/;
 	$params{VERSION} = 'latest' unless defined($params{VERSION});
 	if ($self->_client()->GET('/subjects/' . $params{SUBJECT} . '-' . $params{TYPE} . '/versions/' . $params{VERSION})) {
-		if (exists $self->_get_response()->{schema}) {
-			my $avro_schema;
+		my $sv = $self->_get_response();
+		if (exists $sv->{schema}) {
 			try {
-				$avro_schema = Avro::Schema->parse($self->_get_response()->{schema});
+				$sv->{schema} = Avro::Schema->parse($sv->{schema});
 			} catch {
 				$self->_set_error({
 					error_code => -1,
 					message => $_->{'-text'}
 				});
+				return undef;
 			};
-			return $avro_schema;
 		}
+		return $sv;
 	}
 	return undef;
 }
