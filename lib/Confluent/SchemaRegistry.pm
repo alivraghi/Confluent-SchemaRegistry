@@ -445,7 +445,11 @@ sub check_schema {
 		schema => encode_json($schema)
 	});
 	$self->_client()->POST('/subjects/' . $params{SUBJECT} . '-' . $params{TYPE}, $schema);
-	return $self->_get_response();
+	my $schema_info = $self->_get_response();
+	return undef
+		unless $schema_info;
+	$schema_info->{schema} = Avro::Schema->parse($schema_info->{schema});
+	return $schema_info;
 }
 
 
@@ -476,6 +480,8 @@ sub test_schema {
 		schema => encode_json($schema)
 	};
 	$self->_client()->POST('/compatibility/subjects/' . $params{SUBJECT} . '-' . $params{TYPE} . '/versions/' . $params{VERSION}, encode_json($schema));
+	return undef
+		unless defined $self->_get_response();
 	return $self->_get_response()->{is_compatible}
 		if exists($self->_get_response()->{is_compatible});
 	return undef;
