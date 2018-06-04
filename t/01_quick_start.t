@@ -8,7 +8,7 @@ $Data::Dumper::Terse = 1;
 $Data::Dumper::Useqq = 1;
 
 #use Test::More qw( no_plan );
-use Test::More tests => 34;
+use Test::More tests => 44;
 
 BEGIN { use_ok('Confluent::SchemaRegistry', qq/Using/); }
 
@@ -140,6 +140,38 @@ SKIP: {
 
 	my $new_versions = $sr->get_schema_versions(SUBJECT => $subject, TYPE => $type); 
 	ok(scalar(@$new_versions)==scalar(@$versions)+1, qq/Expected +1 version/); 
+
+
+	my $original_cl = $sr->get_top_level_config();
+	ok(grep(/^$original_cl$/, @{$Confluent::SchemaRegistry::COMPATIBILITY_LEVELS}), 'Get top-level compatibility level');
+
+	my $cl = $sr->set_top_level_config(COMPATIBILITY_LEVEL => 'FULL');
+	ok($cl eq 'FULL', 'Update top-level compatibility level');
+
+	$cl = $sr->get_top_level_config();
+	ok($cl eq 'FULL', 'Verify top-level compatibility level');
+
+	$cl = $sr->set_top_level_config(COMPATIBILITY_LEVEL => $original_cl);
+	ok($cl eq $original_cl, 'Restore top-level compatibility level');
+
+	$cl = $sr->get_top_level_config();
+	ok($cl eq $original_cl, 'Verify restored top-level compatibility level');
+
+
+	$cl = $sr->get_config(SUBJECT => $subject, TYPE => $type);
+	ok(!defined $cl, 'Get default compatibility level'); # When fresh, returns undef because inherits top-level compatibility level
+
+	$cl = $sr->set_config(SUBJECT => $subject, TYPE => $type, COMPATIBILITY_LEVEL => 'NONE');
+	ok($cl eq 'NONE', 'Update compatibility level');
+
+	$cl = $sr->get_config(SUBJECT => $subject, TYPE => $type);
+	ok($cl eq 'NONE', 'Verify compatibility level');
+
+	$cl = $sr->set_config(SUBJECT => $subject, TYPE => $type, COMPATIBILITY_LEVEL => 'BACKWARD');
+	ok($cl eq 'BACKWARD', 'Restore BACKWARD compatibility level');
+
+	$cl = $sr->get_config(SUBJECT => $subject, TYPE => $type);
+	ok($cl eq 'BACKWARD', 'Verify BACKWARD compatibility level');
 
 	my $deleted_version;
 	ok(!defined $sr->delete_schema(SUBJECT => $subject, TYPE => $type, VERSION => 9999), qq/Previous schema deletion failure due to unknown version/);

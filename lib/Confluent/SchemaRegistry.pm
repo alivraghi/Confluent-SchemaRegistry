@@ -37,6 +37,8 @@ use Avro::Schema;
 
 our $VERSION = '0.01';
 
+our $COMPATIBILITY_LEVELS = [ qw/NONE FULL FORWARD BACKWARD/ ];
+
 
 =head2 Constructor
 
@@ -125,7 +127,7 @@ sub new {
 	# effettivamente riferimento ad un Confluent Schema Registry
 	my $res = $self->get_top_level_config();
 	return undef
-		unless $res =~ m/^NONE|FULL|FORWARD|BACKWARD$/;
+		unless grep(/^$res$/, @$COMPATIBILITY_LEVELS);
 		
 	return $self;
 }
@@ -178,7 +180,12 @@ sub _normalize_content {
 	}
 } 
 
-
+sub _encode_error {
+	{ 
+		error_code => $_[0],
+		message => $_[1]
+	}
+}
 
 ##############################################################################################
 # PRIVATE METHODS
@@ -331,10 +338,7 @@ sub get_schema_by_id {
 			try {
 				$avro_schema = Avro::Schema->parse($self->_get_response()->{schema});
 			} catch {
-				$self->_set_error({
-					error_code => -1,
-					message => $_->{'-text'}
-				});
+				$self->_set_error( _encode_error(-2, $_->{'-text'}) );
 			};
 			return $avro_schema;
 		}
@@ -368,10 +372,7 @@ sub get_schema {
 			try {
 				$sv->{schema} = Avro::Schema->parse($sv->{schema});
 			} catch {
-				$self->_set_error({
-					error_code => -1,
-					message => $_->{'-text'}
-				});
+				$self->_set_error( _encode_error(-2, $_->{'-text'}) );
 				return undef;
 			};
 		}
@@ -504,24 +505,56 @@ sub get_top_level_config {
 #     --data '{"compatibility": "NONE"}' \
 #     http://localhost:8081/config
 #   {"compatibility":"NONE"}
-sub update_top_level_config {
-	# compatibility	STRING (NONE|FULL|FORWARD|BACKWARD)
-	#
-	# returns compatibility (STRING)
+sub set_top_level_config {
+	my $self = shift;
+	my %params = @_;
+	$self->_set_error( _encode_error(-1, 'Unexpected value for COMPATIBILITY_LEVEL param') )
+		and return undef
+			unless	defined($params{COMPATIBILITY_LEVEL})
+				&& grep(/^$params{COMPATIBILITY_LEVEL}$/, @$COMPATIBILITY_LEVELS);
+	$self->_client()->PUT('/config', encode_json( { compatibility => $params{COMPATIBILITY_LEVEL} } ));
+	return $self->_get_response()->{compatibility}
+		if defined $self->_get_response();
+	return undef;
 }
 
 
-# Update compatibility requirements under the subject "Kafka-value"
-# $ curl -X PUT -H "Content-Type: application/vnd.schemaregistry.v1+json" \
-#     --data '{"compatibility": "BACKWARD"}' \
-#     http://localhost:8081/config/Kafka-value
-#   {"compatibility":"BACKWARD"}
-sub update_config {
-	# type			STRING ("key" || "value")
-	# subject		STRING
-	# compatibility	STRING (NONE|FULL|FORWARD|BACKWARD)
-	#
-	# returns compatibility (STRING)
+# Get compatibility requirements under the subject
+# 
+# Return compatibility level for the subject or C<undef>
+sub get_config {
+	my $self = shift;
+	my %params = @_;
+	return undef
+		unless	defined($params{SUBJECT})
+				&& defined($params{TYPE})
+				&& $params{SUBJECT} =~ m/^.+$/
+				&& $params{TYPE} =~ m/^key|value$/;
+	return $self->_get_response()->{compatibilityLevel}
+		if $self->_client()->GET('/config/' . $params{SUBJECT} . '-' . $params{TYPE});
+	return undef;
+}
+
+# Update compatibility requirements under the subject
+# 
+# Return the new compatibility level for the subject or C<undef>
+sub set_config {
+	my $self = shift;
+	my %params = @_;
+	$self->_set_error( _encode_error(-1, 'Bad SUBJECT or TYPE parameter') )
+		and return undef
+			unless	defined($params{SUBJECT})
+					&& defined($params{TYPE})
+					&& $params{SUBJECT} =~ m/^.+$/
+					&& $params{TYPE} =~ m/^key|value$/;
+	$self->_set_error( _encode_error(-1, 'Unexpected value for COMPATIBILITY_LEVEL param') )
+		and return undef
+			unless	defined($params{COMPATIBILITY_LEVEL})
+				&& grep(/^$params{COMPATIBILITY_LEVEL}$/, @$COMPATIBILITY_LEVELS);
+	$self->_client()->PUT('/config/' . $params{SUBJECT} . '-' . $params{TYPE}, encode_json( { compatibility => $params{COMPATIBILITY_LEVEL} } ));
+	return $self->_get_response()->{compatibility}
+		if defined $self->_get_response();
+	return undef;
 }
 
 =head1 TODO
