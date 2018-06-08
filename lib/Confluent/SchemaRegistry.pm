@@ -30,10 +30,8 @@ use REST::Client;
 use HTTP::Status qw/:is/;
 use Try::Tiny;
 use Aspect;
-
 use Avro::Schema;
 
-# FIXME implement update_top_level_config() and update_config() methods
 
 our $VERSION = '0.01';
 
