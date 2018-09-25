@@ -125,7 +125,7 @@ sub new {
 	# effettivamente riferimento ad un Confluent Schema Registry
 	my $res = $self->get_top_level_config();
 	return undef
-		unless grep(/^$res$/, @$COMPATIBILITY_LEVELS);
+		unless defined($res) && grep(/^$res$/, @$COMPATIBILITY_LEVELS);
 		
 	return $self;
 }
