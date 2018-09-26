@@ -92,7 +92,7 @@ DESCRIPTION
     TYPE ($scalar)
         the type of schema ("key" or "value")
 
-    SCHEMA ($hashref)
+    SCHEMA ($hashref or $json)
         the schema to add
 
 TODO

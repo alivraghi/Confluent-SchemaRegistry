@@ -9,7 +9,5 @@ INSTALL
 lib/Confluent/SchemaRegistry.pm
 Makefile.PL
 MANIFEST
-META.yml
 README
-README.md
 t/01_quick_start.t
