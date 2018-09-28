@@ -565,7 +565,7 @@ Alvaro Livraghi, E<lt>alvarol@cpan.orgE<gt>
 
 =head1 COPYRIGHT
 
-Copyright 2008 - 2010 by Alvaro Livraghi
+Copyright 2018 by Alvaro Livraghi
 
 This program is free software; you can redistribute it and/or modify it under the same terms as Perl itself.
 
