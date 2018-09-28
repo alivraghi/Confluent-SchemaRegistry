@@ -15,5 +15,10 @@ requires 'Avro::Schema';
 requires 'Aspect';
 
 WriteMakefile(
-    NAME => 'Confluent::SchemaRegistry'
+    NAME => 'Confluent::SchemaRegistry',
+    META_MERGE => {
+        resources => {
+            repository  => 'https://github.com/alivraghi/Confluent-SchemaRegistry'
+        }
+    }
 );

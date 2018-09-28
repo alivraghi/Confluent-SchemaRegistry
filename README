@@ -15,9 +15,18 @@ DESCRIPTION
     according to *Apache Avro* schema specification
     (<https://avro.apache.org/>).
 
-    Read full Schema Registry RESTful APIs here:
-    <https://docs.confluent.io/current/schema-registry/docs/api.html?_ga=2.2
-    34767710.1188695207.1526911788-1213051144.1524553242#>
+  HEAD UP
+    Confluent Schema Registry documentation
+        Full RESTful API documentation of Schema Registry is available here:
+        <https://docs.confluent.io/current/schema-registry/docs/api.html?_ga
+        =2.234767710.1188695207.1526911788-1213051144.1524553242#>
+
+    Avro package
+        Avro package is a dependency of *Confluent::SchemaRegistry* but is
+        not available in CPAN but it's necessary to download it from GitHub
+        repository at: https://github.com/apache/avro/tree/master/lang/perl
+
+        Please, refer its documentation for installation.
 
   Constructor
    new( [%config] )
@@ -101,8 +110,16 @@ TODO
 AUTHOR
     Alvaro Livraghi, <alvarol@cpan.org>
 
-COPYRIGHT
-    Copyright 2008 - 2010 by Alvaro Livraghi
+CONTRIBUTE
+    https://github.com/alivraghi/Confluent-SchemaRegistry/issues
+
+BUG
+    Please report bugs and additional features to GitHub:
+
+    https://github.com/alivraghi/Confluent-SchemaRegistry/issues
+
+COPYRIGHT AND LICENSE
+    Copyright 2018 by Alvaro Livraghi
 
     This program is free software; you can redistribute it and/or modify it
     under the same terms as Perl itself.

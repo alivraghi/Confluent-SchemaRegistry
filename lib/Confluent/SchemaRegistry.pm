@@ -17,7 +17,24 @@ C<Confluent::SchemaRegistry> provides a simple way to interact with B<Confluent 
 B<Apache Kafka> (L<https://kafka.apache.org/>) according to I<Apache Avro> schema specification
 (L<https://avro.apache.org/>).
 
-Read full Schema Registry RESTful APIs here: L<https://docs.confluent.io/current/schema-registry/docs/api.html?_ga=2.234767710.1188695207.1526911788-1213051144.1524553242#>
+=head2 HEAD UP
+
+=over 4
+
+=item Confluent Schema Registry documentation
+
+Full RESTful API documentation of B<Schema Registry> is available here: 
+L<https://docs.confluent.io/current/schema-registry/docs/api.html?_ga=2.234767710.1188695207.1526911788-1213051144.1524553242#>
+
+=item Avro package
+
+B<Avro> package is a dependency of I<Confluent::SchemaRegistry> but is not available in CPAN but
+it's necessary to download it from GitHub repository at: https://github.com/apache/avro/tree/master/lang/perl
+
+Please, refer its documentation for installation.
+
+=back
+
 
 =cut
 
@@ -563,7 +580,21 @@ sub set_config {
 
 Alvaro Livraghi, E<lt>alvarol@cpan.orgE<gt>
 
-=head1 COPYRIGHT
+=head1 CONTRIBUTE
+
+https://github.com/alivraghi/Confluent-SchemaRegistry/issues
+
+=head1 BUG
+
+Please report bugs and additional features to GitHub:
+
+=over 4
+
+=item https://github.com/alivraghi/Confluent-SchemaRegistry/issues
+
+=back
+
+=head1 COPYRIGHT AND LICENSE
 
 Copyright 2018 by Alvaro Livraghi
 
