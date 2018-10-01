@@ -50,7 +50,7 @@ use Aspect;
 use Avro::Schema;
 
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 our $COMPATIBILITY_LEVELS = [ qw/NONE FULL FORWARD BACKWARD/ ];
 
