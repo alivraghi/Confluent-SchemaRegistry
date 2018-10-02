@@ -8,7 +8,7 @@ Confluent::SchemaRegistry - A simple client for interacting with B<Confluent Sch
 
  use Confluent::SchemaRegistry;
 
- my $sr = Confluent::SchemaRegistry->new( { host => 'https://my-schema-registry.org' });
+ my $sr = Confluent::SchemaRegistry->new( { host => 'https://my-schema-registry.org' } );
 
 =head1 DESCRIPTION
 
@@ -29,7 +29,7 @@ L<https://docs.confluent.io/current/schema-registry/docs/api.html?_ga=2.23476771
 =item Avro package
 
 B<Avro> package is a dependency of I<Confluent::SchemaRegistry> but is not available in CPAN but
-it's necessary to download it from GitHub repository at: https://github.com/apache/avro/tree/master/lang/perl
+you'll have to download it from GitHub repository at L<https://github.com/apache/avro/tree/master/lang/perl>.
 
 Please, refer its documentation for installation.
 
@@ -582,17 +582,11 @@ Alvaro Livraghi, E<lt>alvarol@cpan.orgE<gt>
 
 =head1 CONTRIBUTE
 
-https://github.com/alivraghi/Confluent-SchemaRegistry/issues
+L<https://github.com/alivraghi/Confluent-SchemaRegistry>
 
 =head1 BUG
 
-Please report bugs and additional features to GitHub:
-
-=over 4
-
-=item https://github.com/alivraghi/Confluent-SchemaRegistry/issues
-
-=back
+Please use GitHub project link above to report problems or contact authors.
 
 =head1 COPYRIGHT AND LICENSE
 
