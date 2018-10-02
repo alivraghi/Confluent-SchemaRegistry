@@ -23,11 +23,10 @@ DESCRIPTION
 
     Avro package
         Avro package is a dependency of *Confluent::SchemaRegistry* but is
-        not available in CPAN but you'll have to download it from GitHub
-        repository at
-        <https://github.com/apache/avro/tree/master/lang/perl>.
-
-        Please, refer its documentation for installation.
+        not available in CPAN index. Perhaps you may find and download it
+        directly from GitHub repository at
+        <https://github.com/apache/avro/tree/master/lang/perl>. Please,
+        refer its documentation for installation.
 
   Constructor
    new( [%config] )

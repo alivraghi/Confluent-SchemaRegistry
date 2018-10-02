@@ -28,9 +28,8 @@ L<https://docs.confluent.io/current/schema-registry/docs/api.html?_ga=2.23476771
 
 =item Avro package
 
-B<Avro> package is a dependency of I<Confluent::SchemaRegistry> but is not available in CPAN but
-you'll have to download it from GitHub repository at L<https://github.com/apache/avro/tree/master/lang/perl>.
-
+B<Avro> package is a dependency of I<Confluent::SchemaRegistry> but is not available in CPAN index.
+Perhaps you may find and download it directly from GitHub repository at L<https://github.com/apache/avro/tree/master/lang/perl>.
 Please, refer its documentation for installation.
 
 =back
@@ -50,7 +49,7 @@ use Aspect;
 use Avro::Schema;
 
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 our $COMPATIBILITY_LEVELS = [ qw/NONE FULL FORWARD BACKWARD/ ];
 
