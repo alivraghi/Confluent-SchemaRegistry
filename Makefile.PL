@@ -36,14 +36,12 @@ my %config = (
 		'Test::Exception'			=> '0.43'
     },
     META_MERGE          => {
-#        no_index                => {
-#            directory               => [
-#                't',
-#                'inc',
-#                'xt',
-#                'tools',
-#            ]
-#        },
+        no_index                => {
+            directory               => [
+                't',
+                'inc',
+            ]
+        },
         'meta-spec'             => { version => 2 },
         resources               => {
             bugtracker              => {
@@ -69,23 +67,4 @@ my %config = (
 #    NO_MYMETA           => 1,
 );
 
-#my @patterns = qw( t/*.t );
-#$config{test} = { TESTS => join ' ', map { glob } @patterns };
-#
-#if ( $ENV{AUTHOR_TESTS} ) {
-#    @patterns = qw( xt/author/*.t );
-#    $config{test}->{TESTS} .= ' '.join ' ', map { glob } @patterns;
-#}
-#
-#if ( $ENV{RELEASE_TESTS} ) {
-#    @patterns = qw( xt/release/*.t );
-#    $config{test}->{TESTS} .= ' '.join ' ', map { glob } @patterns;
-#}
-#
-#mkdir 't/data' unless -d 't/data';
-#mkdir 'inc' unless -d 'inc';
-
 ExtUtils::MakeMaker::WriteMakefile( %config );
-
-
-
