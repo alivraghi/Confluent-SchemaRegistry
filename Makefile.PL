@@ -4,20 +4,14 @@ use strict;
 use warnings;
 use 5.010;
 
+use Config;
+use inc::Module::Install;
+
 if ( $^O eq 'MSWin32' || $^O eq 'solaris' ||  $^O eq 'cygwin' ) {
     print STDERR "OS unsupported: $^O\n";
     exit( 255 );
 }
 
-use ExtUtils::MakeMaker qw(
-    prompt
-);
-use File::Spec::Functions qw(
-    catdir
-);
-
-use Config;
-use inc::Module::Install;
 readme_from('lib/Confluent/SchemaRegistry.pm');
 
 my %config = (
