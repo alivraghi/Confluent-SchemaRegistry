@@ -12,11 +12,14 @@ if ( $^O eq 'MSWin32' || $^O eq 'solaris' ||  $^O eq 'cygwin' ) {
     exit( 255 );
 }
 
-readme_from('lib/Confluent/SchemaRegistry.pm');
+my $package = 'Confluent::SchemaRegistry';
+my $path_to_package = 'lib/Confluent/SchemaRegistry.pm';
+readme_from($path_to_package);
+`perldoc -uT $path_to_package | pod2markdown - README.md`; # useful for GitHub repo home
 
 my %config = (
-    NAME                => 'Confluent::SchemaRegistry',
-    VERSION_FROM        => 'lib/Confluent/SchemaRegistry.pm',  # finds $VERSION
+    NAME                => $package,
+    VERSION_FROM        => $path_to_package,  # finds $VERSION
     MIN_PERL_VERSION    => '5.010',
     PREREQ_PM           => {            # more to the list $Module::CoreList::version{5.010}
 		'JSON::XS'		=> '3.02',
