@@ -583,7 +583,7 @@ Alvaro Livraghi, E<lt>alvarol@cpan.orgE<gt>
 
 L<https://github.com/alivraghi/Confluent-SchemaRegistry>
 
-=head1 BUG
+=head1 BUGS
 
 Please use GitHub project link above to report problems or contact authors.
 
