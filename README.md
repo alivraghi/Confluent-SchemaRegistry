@@ -28,12 +28,27 @@ Confluent::SchemaRegistry - A simple client for interacting with **Confluent Sch
     Perhaps you may find and download it directly from GitHub repository at [https://github.com/apache/avro/tree/master/lang/perl](https://github.com/apache/avro/tree/master/lang/perl).
     Please, refer its documentation for installation.
 
+# INSTALL
+
+Installation of `Kafka::Consumer::Avro` is a canonical:
+
+    perl Makefile.PL
+    make
+    make test
+    make install
+
+## TEST NOTES
+
+Tests expect that in the target machine are available Kafka and Schema Registry listening on `localhost` and default ports, otherwise most of the test are skipped.
+
+# USAGE
+
 ## Constructor
 
 ### new( \[%config\] )
 
 Construct a new `Confluent::SchemaRegistry`. Takes an optional hash that provides
-configuration flags for the [REST::Client](https://metacpan.org/pod/REST::Client) internal object.
+configuration flags for the [REST::Client](https://metacpan.org/pod/REST%3A%3AClient) internal object.
 
 The config flags, according to `REST::Client::new` specs, are:
 
@@ -86,7 +101,7 @@ The config flags, according to `REST::Client::new` specs, are:
 
 - useragent
 
-    An [LWP::UserAgent](https://metacpan.org/pod/LWP::UserAgent) object, ready to make http requests.
+    An [LWP::UserAgent](https://metacpan.org/pod/LWP%3A%3AUserAgent) object, ready to make http requests.
 
     REST::Client will provide a default for you if you do not set this.
 
