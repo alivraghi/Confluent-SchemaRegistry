@@ -89,7 +89,7 @@ SKIP: {
                         "Please, try setting CONFLUENT_SCHEMA_REGISTY_URL environment variable to specify it's URL.", "\n",
                         ('*' x 80) . "\n",
                         "\n");
-                skip(qq/Confluent Schema Registry service is not up or isn't running on localhost:8081/, 41);
+                skip(qq/Confluent Schema Registry service is not up or isn't listening on $sr_url/, 41);
         }
 
         ok(!defined $sr->add_schema(), qq/Bad call to add_schema/);
