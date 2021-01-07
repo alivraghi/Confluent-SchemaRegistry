@@ -39,7 +39,9 @@ Installation of `Kafka::Consumer::Avro` is a canonical:
 
 ## TEST NOTES
 
-Tests expect that in the target machine are available Kafka and Schema Registry listening on `localhost` and default ports, otherwise most of the test are skipped.
+Tests expect that in the target host is available Schema Registry listening on `http://localhost:8081`, otherwise most of the test are skipped.
+
+You can alternatively set a different URL by exporting `CONFLUENT_SCHEMA_REGISTY_URL` environment variable.
 
 # USAGE
 
