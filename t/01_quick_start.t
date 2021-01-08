@@ -2,10 +2,6 @@
 
 use strict;
 use warnings;
-use Data::Dumper;
-$Data::Dumper::Purity = 1;
-$Data::Dumper::Terse = 1;
-$Data::Dumper::Useqq = 1;
 
 #use Test::More qw( no_plan );
 use Test::More tests => 42;
@@ -105,7 +101,6 @@ SKIP: {
 
         my $subjects = $sr->get_subjects();
         isa_ok($subjects, 'ARRAY', qq/Subjects/);
-        #print STDERR Dumper $subjects;
 
         my $versions = $sr->get_schema_versions(SUBJECT => $subject, TYPE => $type);
         isa_ok($versions, 'ARRAY', qq/Schema versions/);
