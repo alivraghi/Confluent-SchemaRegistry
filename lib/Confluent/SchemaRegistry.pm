@@ -155,7 +155,7 @@ sub new {
 	$config{host} = 'http://localhost:8081' unless defined $config{host};
 	$self->{_CLIENT} = REST::Client->new( %config );
 	$self->{_CLIENT}->addHeader('Content-Type', 'application/vnd.schemaregistry.v1+json');
-	$self->{_CLIENT}->addHeader('Authorization', $config{authorization}) if ($config{Authorization});
+	$self->{_CLIENT}->addHeader('Authorization', $config{authorization}) if ($config{authorization});
 	$self->{_CLIENT}->{_ERROR}    = undef; # will be set in case of unsuccessfully responses
 	$self->{_CLIENT}->{_RESPONSE} = undef; # will be set with normalized response contents
 
