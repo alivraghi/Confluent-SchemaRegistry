@@ -88,6 +88,12 @@ The host at which I<Schema Registry> is listening.
 
 The default is L<http://localhost:8081>
 
+=item authorization
+
+The authorization header which I<Schema Registry> is using.
+
+The default is L<http://localhost:8081>
+
 =item timeout
 
 A timeout in seconds for requests made with the client.  After the timeout the
@@ -149,6 +155,7 @@ sub new {
 	$config{host} = 'http://localhost:8081' unless defined $config{host};
 	$self->{_CLIENT} = REST::Client->new( %config );
 	$self->{_CLIENT}->addHeader('Content-Type', 'application/vnd.schemaregistry.v1+json');
+	$self->{_CLIENT}->addHeader('Authorization', $config{authorization}) if ($config{authorization});
 	$self->{_CLIENT}->{_ERROR}    = undef; # will be set in case of unsuccessfully responses
 	$self->{_CLIENT}->{_RESPONSE} = undef; # will be set with normalized response contents
 
